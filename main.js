@@ -50,6 +50,7 @@ if (state.date !== today) {
 
 const habitList = Object.keys(state.habits);
 
+// Toggle habit
 function toggleHabit(habit) {
   state.habits[habit] = !state.habits[habit];
 
@@ -65,6 +66,61 @@ function getProgress() {
   return Math.round((done / habitList.length) * 100);
 }
 
+// -------- SMART MACRO ENGINE --------
+function parseFood(input) {
+  const db = {
+    paneer: { p: 18, c: 2, f: 20, cal: 260, base: 100 },
+    milk: { p: 8, c: 12, f: 8, cal: 150, base: 250 },
+    curd: { p: 4, c: 5, f: 4, cal: 60, base: 100 },
+    soya: { p: 25, c: 10, f: 1, cal: 170, base: 50 }
+  };
+
+  let parts = input.toLowerCase().split(" ");
+  let food = parts[0];
+
+  let quantity = 1;
+
+  if (parts[1]) {
+    quantity = parseInt(parts[1]);
+  }
+
+  let data = db[food];
+
+  if (!data) return { name: input, p: 0, c: 0, f: 0, cal: 0 };
+
+  let factor = quantity / data.base;
+
+  return {
+    name: input,
+    p: Math.round(data.p * factor),
+    c: Math.round(data.c * factor),
+    f: Math.round(data.f * factor),
+    cal: Math.round(data.cal * factor)
+  };
+}
+
+function addFood(value) {
+  if (!value) return;
+
+  let parsed = parseFood(value);
+
+  state.foods.push(parsed);
+
+  save();
+  render();
+}
+
+function getTotals() {
+  return state.foods.reduce((acc, f) => {
+    acc.p += f.p;
+    acc.c += f.c;
+    acc.f += f.f;
+    acc.cal += f.cal;
+    return acc;
+  }, { p: 0, c: 0, f: 0, cal: 0 });
+}
+
+// -------- UI --------
 function getLast7Days() {
   return state.history.slice(-7);
 }
@@ -89,35 +145,11 @@ function getFeedback() {
   return "🚨 Focus — you're slipping";
 }
 
-// Food
-function addFood(value) {
-  if (!value) return;
-
-  const db = {
-    paneer: { p: 18 },
-    milk: { p: 8 },
-    curd: { p: 4 },
-    soya: { p: 25 }
-  };
-
-  let key = value.toLowerCase().split(" ")[0];
-  let data = db[key] || { p: 0 };
-
-  state.foods.push({ name: value, ...data });
-
-  save();
-  render();
-}
-
-function getTotals() {
-  return state.foods.reduce((acc, f) => acc + f.p, 0);
-}
-
 function render() {
   const progress = getProgress();
   const last7 = getLast7Days();
   const stats = getStats();
-  const totalProtein = getTotals();
+  const totals = getTotals();
 
   app.innerHTML = `
   <div class="p-4">
@@ -167,16 +199,18 @@ function render() {
     <!-- Food -->
     <div>
       <h2>🍽️ Food</h2>
-      <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 100g"/>
+      <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 200g"/>
       <button onclick="addFood(document.getElementById('foodInput').value)"
         class="bg-blue-500 w-full p-2 rounded">Add</button>
 
       <div class="mt-2 text-sm">
-        ${state.foods.map(f => `<div>${f.name}</div>`).join("")}
+        ${state.foods.map(f => `
+          <div>${f.name} → P:${f.p} C:${f.c} F:${f.f}</div>
+        `).join("")}
       </div>
 
       <div class="mt-2 font-semibold">
-        Total Protein: ${totalProtein}g
+        Total → P:${totals.p} C:${totals.c} F:${totals.f} Cal:${totals.cal}
       </div>
     </div>
 
