@@ -65,6 +65,16 @@ function getProgress() {
   return Math.round((done / habitList.length) * 100);
 }
 
+// FEEDBACK (RESTORED)
+function getFeedback() {
+  const progress = getProgress();
+
+  if (progress === 100) return "🔥 Perfect day!";
+  if (progress >= 80) return "💪 Strong consistency";
+  if (progress >= 50) return "⚠️ Keep pushing";
+  return "🚨 Focus — you're slipping";
+}
+
 // FOOD
 function parseFood(input) {
   const db = {
@@ -115,7 +125,7 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// UI
+// RENDER
 function render() {
   const progress = getProgress();
   const totals = getTotals();
@@ -129,7 +139,7 @@ function render() {
   // HOME
   if (state.page === "home") {
     content = `
-      <div class="flex justify-center mb-6">
+      <div class="flex justify-center mb-4 relative">
         <svg width="120" height="120">
           <circle cx="60" cy="60" r="${radius}" stroke="#333" stroke-width="10" fill="none"/>
           <circle cx="60" cy="60" r="${radius}" stroke="#f97316" stroke-width="10"
@@ -139,14 +149,19 @@ function render() {
             stroke-linecap="round"
             transform="rotate(-90 60 60)"/>
         </svg>
-        <div class="absolute mt-10 text-xl font-bold">${progress}%</div>
+        <div class="absolute top-10 text-xl font-bold">${progress}%</div>
+      </div>
+
+      <!-- FEEDBACK ADDED -->
+      <div class="text-center mb-4 text-orange-400 font-medium">
+        ${getFeedback()}
       </div>
 
       <div class="grid grid-cols-2 gap-3 mb-6">
         ${habitList.map(h => `
           <div onclick="toggleHabit('${h}')"
-            class="p-4 rounded-2xl bg-gray-800 text-center shadow ${
-              state.habits[h] ? 'bg-green-600' : ''
+            class="p-4 rounded-2xl text-center ${
+              state.habits[h] ? 'bg-green-600' : 'bg-gray-800'
             }">
             ${h}
           </div>
@@ -206,12 +221,11 @@ function render() {
       ${content}
 
       <div class="fixed bottom-0 left-0 right-0 bg-gray-900 flex justify-around p-3">
-
         <button onclick="switchPage('home')">🏠</button>
         <button onclick="switchPage('food')">🍽️</button>
         <button onclick="switchPage('stats')">📊</button>
-
       </div>
+
     </div>
   `;
 }
