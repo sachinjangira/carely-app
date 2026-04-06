@@ -99,6 +99,7 @@ function parseFood(input) {
   };
 }
 
+// Add food (FIXED)
 function addFood(value) {
   if (!value) return;
 
@@ -106,10 +107,14 @@ function addFood(value) {
 
   state.foods.push(parsed);
 
+  // Clear input field
+  document.getElementById("foodInput").value = "";
+
   save();
   render();
 }
 
+// Totals
 function getTotals() {
   return state.foods.reduce((acc, f) => {
     acc.p += f.p;
@@ -120,7 +125,7 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// -------- UI --------
+// -------- UI HELPERS --------
 function getLast7Days() {
   return state.history.slice(-7);
 }
@@ -145,6 +150,7 @@ function getFeedback() {
   return "🚨 Focus — you're slipping";
 }
 
+// -------- RENDER --------
 function render() {
   const progress = getProgress();
   const last7 = getLast7Days();
@@ -198,19 +204,32 @@ function render() {
 
     <!-- Food -->
     <div>
-      <h2>🍽️ Food</h2>
+      <h2 class="text-lg mb-2">🍽️ Food</h2>
       <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 200g"/>
+
       <button onclick="addFood(document.getElementById('foodInput').value)"
-        class="bg-blue-500 w-full p-2 rounded">Add</button>
+        class="bg-blue-500 w-full p-2 rounded">
+        Add
+      </button>
 
       <div class="mt-2 text-sm">
         ${state.foods.map(f => `
-          <div>${f.name} → P:${f.p} C:${f.c} F:${f.f}</div>
+          <div>
+            ${f.name} → 
+            Protein: ${f.p}g | 
+            Carbs: ${f.c}g | 
+            Fat: ${f.f}g | 
+            Calories: ${f.cal}
+          </div>
         `).join("")}
       </div>
 
-      <div class="mt-2 font-semibold">
-        Total → P:${totals.p} C:${totals.c} F:${totals.f} Cal:${totals.cal}
+      <div class="mt-3 font-semibold">
+        Total → 
+        Protein: ${totals.p}g | 
+        Carbs: ${totals.c}g | 
+        Fat: ${totals.f}g | 
+        Calories: ${totals.cal}
       </div>
     </div>
 
@@ -218,6 +237,7 @@ function render() {
   `;
 }
 
+// expose
 window.toggleHabit = toggleHabit;
 window.addFood = addFood;
 
