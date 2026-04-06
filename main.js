@@ -65,14 +65,14 @@ function getProgress() {
   return Math.round((done / habitList.length) * 100);
 }
 
-// FEEDBACK (RESTORED)
+// FEEDBACK
 function getFeedback() {
   const progress = getProgress();
 
-  if (progress === 100) return "🔥 Perfect day!";
-  if (progress >= 80) return "💪 Strong consistency";
-  if (progress >= 50) return "⚠️ Keep pushing";
-  return "🚨 Focus — you're slipping";
+  if (progress === 100) return "Perfect day";
+  if (progress >= 80) return "Strong consistency";
+  if (progress >= 50) return "Keep pushing";
+  return "Focus more";
 }
 
 // FOOD
@@ -125,6 +125,13 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
+// ICONS (SVG)
+const icons = {
+  home: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>`,
+  food: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 2v6h6M21 2v6h-6M3 22v-6h6M21 22v-6h-6"/></svg>`,
+  stats: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 3v18h18M9 17V9M13 17V5M17 17v-3"/></svg>`
+};
+
 // RENDER
 function render() {
   const progress = getProgress();
@@ -139,29 +146,29 @@ function render() {
   // HOME
   if (state.page === "home") {
     content = `
-      <div class="flex justify-center mb-4 relative">
-        <svg width="120" height="120">
-          <circle cx="60" cy="60" r="${radius}" stroke="#333" stroke-width="10" fill="none"/>
-          <circle cx="60" cy="60" r="${radius}" stroke="#f97316" stroke-width="10"
-            fill="none"
-            stroke-dasharray="${circumference}"
-            stroke-dashoffset="${offset}"
-            stroke-linecap="round"
-            transform="rotate(-90 60 60)"/>
-        </svg>
-        <div class="absolute top-10 text-xl font-bold">${progress}%</div>
+      <div class="bg-gray-900 p-4 rounded-2xl mb-4">
+
+        <div class="flex justify-center mb-4 relative">
+          <svg width="120" height="120">
+            <circle cx="60" cy="60" r="${radius}" stroke="#333" stroke-width="10" fill="none"/>
+            <circle cx="60" cy="60" r="${radius}" stroke="#f97316" stroke-width="10"
+              fill="none"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"
+              stroke-linecap="round"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="absolute top-10 text-xl font-bold">${progress}%</div>
+        </div>
+
+        <div class="text-center text-orange-400">${getFeedback()}</div>
       </div>
 
-      <!-- FEEDBACK ADDED -->
-      <div class="text-center mb-4 text-orange-400 font-medium">
-        ${getFeedback()}
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="grid grid-cols-2 gap-3">
         ${habitList.map(h => `
           <div onclick="toggleHabit('${h}')"
-            class="p-4 rounded-2xl text-center ${
-              state.habits[h] ? 'bg-green-600' : 'bg-gray-800'
+            class="p-4 rounded-2xl text-center bg-gray-900 shadow ${
+              state.habits[h] ? 'bg-green-600' : ''
             }">
             ${h}
           </div>
@@ -173,23 +180,26 @@ function render() {
   // FOOD
   if (state.page === "food") {
     content = `
-      <input id="foodInput" class="text-black p-3 w-full mb-3 rounded" placeholder="paneer 200g"/>
+      <div class="bg-gray-900 p-4 rounded-2xl">
 
-      <button onclick="addFood(document.getElementById('foodInput').value)"
-        class="bg-blue-500 w-full p-3 rounded mb-2">Add</button>
+        <input id="foodInput" class="text-black p-3 w-full mb-3 rounded" placeholder="paneer 200g"/>
 
-      <button onclick="clearFood()"
-        class="bg-red-500 w-full p-3 rounded mb-3">Clear</button>
+        <button onclick="addFood(document.getElementById('foodInput').value)"
+          class="bg-blue-500 w-full p-3 rounded mb-2">Add</button>
 
-      ${state.foods.map(f => `
-        <div class="bg-gray-800 p-3 mb-2 rounded">
-          ${f.name}<br/>
-          Protein: ${f.p}g | Carbs: ${f.c}g | Fat: ${f.f}g
+        <button onclick="clearFood()"
+          class="bg-red-500 w-full p-3 rounded mb-3">Clear</button>
+
+        ${state.foods.map(f => `
+          <div class="bg-gray-800 p-3 mb-2 rounded">
+            ${f.name}<br/>
+            Protein: ${f.p}g | Carbs: ${f.c}g | Fat: ${f.f}g
+          </div>
+        `).join("")}
+
+        <div class="mt-3 font-bold">
+          Protein: ${totals.p}g
         </div>
-      `).join("")}
-
-      <div class="mt-3 font-bold">
-        Protein: ${totals.p}g
       </div>
     `;
   }
@@ -199,11 +209,13 @@ function render() {
     const last7 = state.history.slice(-7);
 
     content = `
-      <div class="flex items-end gap-2 h-24">
-        ${last7.map(d => `
-          <div class="flex-1 bg-orange-500"
-            style="height:${d.progress}%"></div>
-        `).join("")}
+      <div class="bg-gray-900 p-4 rounded-2xl">
+        <div class="flex items-end gap-2 h-24">
+          ${last7.map(d => `
+            <div class="flex-1 bg-orange-500"
+              style="height:${d.progress}%"></div>
+          `).join("")}
+        </div>
       </div>
     `;
   }
@@ -213,17 +225,27 @@ function render() {
 
       <h1 class="text-3xl text-center mb-4 text-orange-400">Carely</h1>
 
-      <div class="flex justify-between mb-4">
+      <div class="flex justify-between mb-4 text-sm">
         <div>🔥 ${state.streak}</div>
         <div>🏆 ${state.score}</div>
       </div>
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-gray-900 flex justify-around p-3">
-        <button onclick="switchPage('home')">🏠</button>
-        <button onclick="switchPage('food')">🍽️</button>
-        <button onclick="switchPage('stats')">📊</button>
+      <div class="fixed bottom-0 left-0 right-0 bg-gray-900 flex justify-around p-3 border-t border-gray-700">
+
+        <button onclick="switchPage('home')" class="${state.page==='home'?'text-orange-400':''}">
+          ${icons.home}
+        </button>
+
+        <button onclick="switchPage('food')" class="${state.page==='food'?'text-orange-400':''}">
+          ${icons.food}
+        </button>
+
+        <button onclick="switchPage('stats')" class="${state.page==='stats'?'text-orange-400':''}">
+          ${icons.stats}
+        </button>
+
       </div>
 
     </div>
