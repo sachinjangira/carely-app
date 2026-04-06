@@ -1,313 +1,107 @@
-const app = document.getElementById("app");
+if (state.page === "food") {
 
-let today = new Date().toDateString();
+  const foodDB = {
+    paneer: { p: 18, c: 2, f: 20, cal: 260 },
+    milk: { p: 3.5, c: 5, f: 3.5, cal: 60 },
+    curd: { p: 3, c: 4, f: 3, cal: 50 },
+    roti: { p: 3, c: 15, f: 1, cal: 80 },
+    rice: { p: 2.5, c: 28, f: 0.3, cal: 130 },
+    dal: { p: 9, c: 20, f: 1, cal: 120 },
+    soya: { p: 25, c: 10, f: 1, cal: 170 },
+    tofu: { p: 8, c: 2, f: 4, cal: 80 },
 
-let state = JSON.parse(localStorage.getItem("carely")) || {
-  date: today,
-  score: 0,
-  streak: 0,
-  history: [],
-  page: "home",
-  weight: [],
-  habits: {
-    Breakfast: false,
-    Lunch: false,
-    Dinner: false,
-    Protein: false,
-    Workout: false,
-    Steps: false,
-  },
-  foods: []
-};
-
-function save() {
-  localStorage.setItem("carely", JSON.stringify(state));
-}
-
-// RESET
-if (state.date !== today) {
-  const completed = Object.values(state.habits).filter(v => v).length;
-  const percent = Math.round((completed / 6) * 100);
-
-  state.history.push({ date: state.date, progress: percent });
-
-  if (state.history.length > 30) state.history.shift();
-
-  state.streak = percent >= 80 ? state.streak + 1 : 0;
-
-  state.date = today;
-  Object.keys(state.habits).forEach(k => state.habits[k] = false);
-}
-
-const habitList = Object.keys(state.habits);
-
-// NAV
-function switchPage(page) {
-  state.page = page;
-  save();
-  render();
-}
-
-// HABITS
-function toggleHabit(habit) {
-  if (!state.habits[habit]) {
-    state.habits[habit] = true;
-    state.score += 5;
-  } else {
-    state.habits[habit] = false;
-    state.score -= 5;
-  }
-  save();
-  render();
-}
-
-function getProgress() {
-  const done = habitList.filter(h => state.habits[h]).length;
-  return Math.round((done / habitList.length) * 100);
-}
-
-// FEEDBACK
-function getFeedback() {
-  const progress = getProgress();
-  if (progress === 100) return "Perfect day";
-  if (progress >= 80) return "Strong consistency";
-  if (progress >= 50) return "Keep pushing";
-  return "Focus more";
-}
-
-// FOOD
-function parseFood(input) {
-  const db = {
-    paneer: { p: 18, c: 2, f: 20, cal: 260, base: 100 },
-    milk: { p: 8, c: 12, f: 8, cal: 150, base: 250 },
-    curd: { p: 4, c: 5, f: 4, cal: 60, base: 100 },
-    soya: { p: 25, c: 10, f: 1, cal: 170, base: 50 }
+    pizza: { p: 11, c: 33, f: 10, cal: 285 },
+    burger: { p: 12, c: 30, f: 12, cal: 295 },
+    fries: { p: 3, c: 41, f: 15, cal: 312 },
+    sandwich: { p: 8, c: 26, f: 6, cal: 200 }
   };
 
-  let [food, qty] = input.toLowerCase().split(" ");
-  let quantity = parseInt(qty) || 1;
+  const foodKeys = Object.keys(foodDB);
 
-  let data = db[food];
-  if (!data) return { name: input, p: 0, c: 0, f: 0, cal: 0 };
+  content = `
+    <div class="bg-white/10 p-4 rounded-2xl shadow">
 
-  let factor = quantity / data.base;
+      <!-- SEARCH -->
+      <input id="foodSearch" 
+        oninput="showSuggestions(this.value)"
+        class="text-black p-3 w-full mb-2 rounded"
+        placeholder="Search food (paneer, pizza...)"/>
 
-  return {
-    name: input,
-    p: Math.round(data.p * factor),
-    c: Math.round(data.c * factor),
-    f: Math.round(data.f * factor),
-    cal: Math.round(data.cal * factor)
-  };
-}
+      <!-- SUGGESTIONS -->
+      <div id="suggestions" class="mb-3"></div>
 
-function addFood(value) {
-  if (!value) return;
-  state.foods.push(parseFood(value));
-  document.getElementById("foodInput").value = "";
-  save();
-  render();
-}
+      <!-- QUANTITY -->
+      <input id="quantityInput" 
+        class="text-black p-3 w-full mb-3 rounded"
+        placeholder="Quantity (grams)"/>
 
-function clearFood() {
-  state.foods = [];
-  save();
-  render();
-}
+      <button onclick="addFoodNew()"
+        class="bg-blue-500 w-full p-3 rounded mb-3">
+        Add Food
+      </button>
 
-function getTotals() {
-  return state.foods.reduce((acc, f) => {
-    acc.p += f.p || 0;
-    acc.c += f.c || 0;
-    acc.f += f.f || 0;
-    acc.cal += f.cal || 0;
-    return acc;
-  }, { p: 0, c: 0, f: 0, cal: 0 });
-}
-
-// WEIGHT
-function addWeight(value) {
-  if (!value) return;
-  state.weight.push(parseFloat(value));
-  document.getElementById("weightInput").value = "";
-  save();
-  render();
-}
-
-// ICONS
-const icons = {
-  home: `<svg width="24" height="24" stroke="currentColor"><path d="M3 10l9-7 9 7v10h-6v-6H9v6H3z"/></svg>`,
-  food: `<svg width="24" height="24" stroke="currentColor"><circle cx="12" cy="12" r="10"/></svg>`,
-  stats: `<svg width="24" height="24" stroke="currentColor"><path d="M3 3v18h18M9 17V9M13 17V5M17 17v-3"/></svg>`
-};
-
-// RENDER
-function render() {
-  const progress = getProgress();
-  const totals = getTotals();
-
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
-
-  let content = "";
-
-  // HOME
-  if (state.page === "home") {
-    content = `
-      <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl shadow-lg mb-4">
-
-        <div class="flex justify-center mb-4 relative">
-          <svg width="120" height="120">
-            <circle cx="60" cy="60" r="${radius}" stroke="#444" stroke-width="10" fill="none"/>
-            <circle cx="60" cy="60" r="${radius}" stroke="#22c55e" stroke-width="10"
-              fill="none"
-              stroke-dasharray="${circumference}"
-              stroke-dashoffset="${offset}"
-              stroke-linecap="round"
-              transform="rotate(-90 60 60)"/>
-          </svg>
-          <div class="absolute top-10 text-xl font-bold">${progress}%</div>
-        </div>
-
-        <div class="text-center text-green-400">${getFeedback()}</div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        ${habitList.map(h => `
-          <div onclick="toggleHabit('${h}')"
-            class="p-4 rounded-2xl text-center shadow ${
-              state.habits[h] ? 'bg-green-500' : 'bg-white/10'
-            }">
-            ${h}
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  // FOOD
-  if (state.page === "food") {
-    content = `
-      <div class="bg-white/10 p-4 rounded-2xl shadow">
-
-        <input id="foodInput" class="text-black p-3 w-full mb-3 rounded" placeholder="paneer 200g"/>
-
-        <button onclick="addFood(document.getElementById('foodInput').value)"
-          class="bg-blue-500 w-full p-3 rounded mb-2">Add</button>
-
-        <button onclick="clearFood()"
-          class="bg-red-500 w-full p-3 rounded mb-3">Clear</button>
-
-        ${state.foods.map(f => `
-          <div class="bg-black/30 p-3 mb-2 rounded">
-            ${f.name}<br/>
+      ${state.foods.map((f, i) => `
+        <div class="bg-black/30 p-3 mb-2 rounded flex justify-between items-center">
+          <div>
+            ${f.name} (${f.qty}g)<br/>
             Protein: ${f.p}g | Carbs: ${f.c}g | Fat: ${f.f}g
           </div>
-        `).join("")}
-
-        <div class="mt-3 font-bold">
-          Protein: ${totals.p}g
+          <button onclick="removeFood(${i})" class="text-red-400">✕</button>
         </div>
+      `).join("")}
+
+      <div class="mt-3 font-bold">
+        Protein: ${totals.p}g | Carbs: ${totals.c}g | Fat: ${totals.f}g
       </div>
-    `;
-  }
-
-  // STATS
-  if (state.page === "stats") {
-    const last7 = state.history.slice(-7);
-    const days = ["S","M","T","W","T","F","S"];
-
-    let chartData = Array(7).fill(0);
-    last7.forEach((d, i) => {
-      chartData[i] = d.progress;
-    });
-
-    content = `
-      <div class="bg-white/10 p-4 rounded-2xl shadow mb-4">
-
-        <div class="text-sm mb-2 text-gray-300">Last 7 Days</div>
-
-        <div class="flex items-end justify-between h-32">
-
-          ${chartData.map((val, i) => `
-            <div class="flex flex-col items-center flex-1">
-
-              <div class="w-6 rounded ${
-                val ? 'bg-green-500' : 'bg-gray-700'
-              }"
-                style="height:${val ? Math.max(val,5) : 10}%">
-              </div>
-
-              <div class="text-xs mt-1 text-gray-400">
-                ${days[i]}
-              </div>
-
-            </div>
-          `).join("")}
-
-        </div>
-      </div>
-
-      <div class="bg-white/10 p-4 rounded-2xl shadow">
-        <input id="weightInput" placeholder="Enter weight"
-          class="text-black p-2 w-full mb-2 rounded"/>
-
-        <button onclick="addWeight(document.getElementById('weightInput').value)"
-          class="bg-purple-500 w-full p-2 rounded mb-3">
-          Add Weight
-        </button>
-
-        ${state.weight.length === 0 
-          ? `<div class="text-gray-400">No data</div>`
-          : state.weight.map(w => `<div>${w} kg</div>`).join("")
-        }
-      </div>
-    `;
-  }
-
-  app.innerHTML = `
-    <div class="p-4 pb-28 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
-
-      <h1 class="text-3xl text-center mb-4 text-green-400">Carely</h1>
-
-      <div class="flex justify-between mb-4 text-sm">
-        <div>🔥 ${state.streak}</div>
-        <div>🏆 ${state.score}</div>
-      </div>
-
-      ${content}
-
-      <div class="fixed bottom-0 left-0 right-0 z-[9999] bg-black border-t border-gray-700 flex">
-
-        <div onclick="switchPage('home')" 
-          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='home'?'#22c55e':'#888'}">
-          ${icons.home}
-          <div style="font-size:10px;">Home</div>
-        </div>
-
-        <div onclick="switchPage('food')" 
-          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='food'?'#22c55e':'#888'}">
-          ${icons.food}
-          <div style="font-size:10px;">Food</div>
-        </div>
-
-        <div onclick="switchPage('stats')" 
-          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='stats'?'#22c55e':'#888'}">
-          ${icons.stats}
-          <div style="font-size:10px;">Stats</div>
-        </div>
-
-      </div>
-
     </div>
   `;
+
+  window.showSuggestions = function(value) {
+    const list = foodKeys
+      .filter(f => f.includes(value.toLowerCase()))
+      .slice(0,5);
+
+    document.getElementById("suggestions").innerHTML =
+      list.map(f => `
+        <div onclick="selectFood('${f}')"
+          class="bg-gray-800 p-2 mb-1 rounded cursor-pointer">
+          ${f}
+        </div>
+      `).join("");
+  };
+
+  window.selectFood = function(food) {
+    document.getElementById("foodSearch").value = food;
+    document.getElementById("suggestions").innerHTML = "";
+  };
+
+  window.addFoodNew = function() {
+    const food = document.getElementById("foodSearch").value.toLowerCase();
+    const qty = parseInt(document.getElementById("quantityInput").value) || 100;
+
+    const data = foodDB[food];
+    if (!data) return;
+
+    const factor = qty / 100;
+
+    state.foods.push({
+      name: food,
+      qty: qty,
+      p: Math.round(data.p * factor),
+      c: Math.round(data.c * factor),
+      f: Math.round(data.f * factor)
+    });
+
+    document.getElementById("foodSearch").value = "";
+    document.getElementById("quantityInput").value = "";
+
+    save();
+    render();
+  };
+
+  window.removeFood = function(index) {
+    state.foods.splice(index, 1);
+    save();
+    render();
+  };
 }
-
-window.toggleHabit = toggleHabit;
-window.addFood = addFood;
-window.clearFood = clearFood;
-window.switchPage = switchPage;
-window.addWeight = addWeight;
-
-render();
