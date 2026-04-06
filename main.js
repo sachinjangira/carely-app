@@ -8,6 +8,7 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   streak: 0,
   history: [],
   page: "home",
+  weight: [],
   habits: {
     Breakfast: false,
     Lunch: false,
@@ -125,11 +126,20 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// ICONS (SVG)
+// WEIGHT
+function addWeight(value) {
+  if (!value) return;
+  state.weight.push(parseFloat(value));
+  document.getElementById("weightInput").value = "";
+  save();
+  render();
+}
+
+// ICONS
 const icons = {
-  home: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>`,
-  food: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 2v6h6M21 2v6h-6M3 22v-6h6M21 22v-6h-6"/></svg>`,
-  stats: `<svg width="24" height="24" fill="none" stroke="currentColor"><path d="M3 3v18h18M9 17V9M13 17V5M17 17v-3"/></svg>`
+  home: `<svg width="24" height="24" stroke="currentColor"><path d="M3 10l9-7 9 7v10h-6v-6H9v6H3z"/></svg>`,
+  food: `<svg width="24" height="24" stroke="currentColor"><circle cx="12" cy="12" r="10"/></svg>`,
+  stats: `<svg width="24" height="24" stroke="currentColor"><path d="M3 3v18h18M9 17V9M13 17V5M17 17v-3"/></svg>`
 };
 
 // RENDER
@@ -146,12 +156,12 @@ function render() {
   // HOME
   if (state.page === "home") {
     content = `
-      <div class="bg-gray-900 p-4 rounded-2xl mb-4">
+      <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl shadow-lg mb-4">
 
         <div class="flex justify-center mb-4 relative">
           <svg width="120" height="120">
-            <circle cx="60" cy="60" r="${radius}" stroke="#333" stroke-width="10" fill="none"/>
-            <circle cx="60" cy="60" r="${radius}" stroke="#f97316" stroke-width="10"
+            <circle cx="60" cy="60" r="${radius}" stroke="#444" stroke-width="10" fill="none"/>
+            <circle cx="60" cy="60" r="${radius}" stroke="#22c55e" stroke-width="10"
               fill="none"
               stroke-dasharray="${circumference}"
               stroke-dashoffset="${offset}"
@@ -161,14 +171,14 @@ function render() {
           <div class="absolute top-10 text-xl font-bold">${progress}%</div>
         </div>
 
-        <div class="text-center text-orange-400">${getFeedback()}</div>
+        <div class="text-center text-green-400">${getFeedback()}</div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         ${habitList.map(h => `
           <div onclick="toggleHabit('${h}')"
-            class="p-4 rounded-2xl text-center bg-gray-900 shadow ${
-              state.habits[h] ? 'bg-green-600' : ''
+            class="p-4 rounded-2xl text-center shadow ${
+              state.habits[h] ? 'bg-green-500' : 'bg-white/10'
             }">
             ${h}
           </div>
@@ -180,7 +190,7 @@ function render() {
   // FOOD
   if (state.page === "food") {
     content = `
-      <div class="bg-gray-900 p-4 rounded-2xl">
+      <div class="bg-white/10 p-4 rounded-2xl shadow">
 
         <input id="foodInput" class="text-black p-3 w-full mb-3 rounded" placeholder="paneer 200g"/>
 
@@ -191,7 +201,7 @@ function render() {
           class="bg-red-500 w-full p-3 rounded mb-3">Clear</button>
 
         ${state.foods.map(f => `
-          <div class="bg-gray-800 p-3 mb-2 rounded">
+          <div class="bg-black/30 p-3 mb-2 rounded">
             ${f.name}<br/>
             Protein: ${f.p}g | Carbs: ${f.c}g | Fat: ${f.f}g
           </div>
@@ -209,21 +219,31 @@ function render() {
     const last7 = state.history.slice(-7);
 
     content = `
-      <div class="bg-gray-900 p-4 rounded-2xl">
+      <div class="bg-white/10 p-4 rounded-2xl shadow mb-4">
         <div class="flex items-end gap-2 h-24">
           ${last7.map(d => `
-            <div class="flex-1 bg-orange-500"
+            <div class="flex-1 bg-green-500"
               style="height:${d.progress}%"></div>
           `).join("")}
         </div>
+      </div>
+
+      <div class="bg-white/10 p-4 rounded-2xl shadow">
+        <input id="weightInput" placeholder="Enter weight"
+          class="text-black p-2 w-full mb-2 rounded"/>
+
+        <button onclick="addWeight(document.getElementById('weightInput').value)"
+          class="bg-purple-500 w-full p-2 rounded mb-3">Add Weight</button>
+
+        ${state.weight.map(w => `<div>${w} kg</div>`).join("")}
       </div>
     `;
   }
 
   app.innerHTML = `
-    <div class="p-4 pb-20 min-h-screen bg-black text-white">
+    <div class="p-4 pb-20 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
 
-      <h1 class="text-3xl text-center mb-4 text-orange-400">Carely</h1>
+      <h1 class="text-3xl text-center mb-4 text-green-400">Carely</h1>
 
       <div class="flex justify-between mb-4 text-sm">
         <div>🔥 ${state.streak}</div>
@@ -232,19 +252,11 @@ function render() {
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-gray-900 flex justify-around p-3 border-t border-gray-700">
+      <div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur flex justify-around p-3">
 
-        <button onclick="switchPage('home')" class="${state.page==='home'?'text-orange-400':''}">
-          ${icons.home}
-        </button>
-
-        <button onclick="switchPage('food')" class="${state.page==='food'?'text-orange-400':''}">
-          ${icons.food}
-        </button>
-
-        <button onclick="switchPage('stats')" class="${state.page==='stats'?'text-orange-400':''}">
-          ${icons.stats}
-        </button>
+        <button onclick="switchPage('home')">${icons.home}</button>
+        <button onclick="switchPage('food')">${icons.food}</button>
+        <button onclick="switchPage('stats')">${icons.stats}</button>
 
       </div>
 
@@ -256,5 +268,6 @@ window.toggleHabit = toggleHabit;
 window.addFood = addFood;
 window.clearFood = clearFood;
 window.switchPage = switchPage;
+window.addWeight = addWeight;
 
 render();
