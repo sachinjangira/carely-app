@@ -6,6 +6,7 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   date: today,
   score: 0,
   streak: 0,
+  history: [],
   habits: {
     Breakfast: false,
     Lunch: false,
@@ -18,14 +19,31 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   foods: []
 };
 
-// Reset daily
+// Save function
+function save() {
+  localStorage.setItem("carely", JSON.stringify(state));
+}
+
+// Daily reset + history save
 if (state.date !== today) {
   const completed = Object.values(state.habits).filter(v => v).length;
-  const percent = (completed / 6) * 100;
+  const percent = Math.round((completed / 6) * 100);
 
+  // Save yesterday into history
+  state.history.push({
+    date: state.date,
+    progress: percent,
+    score: state.score
+  });
+
+  // Keep only last 30 days
+  if (state.history.length > 30) state.history.shift();
+
+  // Streak logic
   if (percent >= 80) state.streak += 1;
   else state.streak = 0;
 
+  // Reset for today
   state.date = today;
   state.habits = {
     Breakfast: false,
@@ -39,10 +57,7 @@ if (state.date !== today) {
 
 const habitList = Object.keys(state.habits);
 
-function save() {
-  localStorage.setItem("carely", JSON.stringify(state));
-}
-
+// Toggle habit
 function toggleHabit(habit) {
   state.habits[habit] = !state.habits[habit];
 
@@ -53,11 +68,13 @@ function toggleHabit(habit) {
   render();
 }
 
+// Progress
 function getProgress() {
   const done = habitList.filter(h => state.habits[h]).length;
   return Math.round((done / habitList.length) * 100);
 }
 
+// Add weight
 function addWeight(value) {
   if (!value) return;
   state.weight.push(value);
@@ -65,6 +82,7 @@ function addWeight(value) {
   render();
 }
 
+// Food system
 function addFood(value) {
   if (!value) return;
 
@@ -84,6 +102,7 @@ function addFood(value) {
   render();
 }
 
+// Macro totals
 function getTotals() {
   return state.foods.reduce((acc, f) => {
     acc.p += f.p;
@@ -94,9 +113,16 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
+// Last 7 days
+function getLast7Days() {
+  return state.history.slice(-7).reverse();
+}
+
+// Render UI
 function render() {
   const progress = getProgress();
   const totals = getTotals();
+  const last7 = getLast7Days();
 
   app.innerHTML = `
   <div class="p-4">
@@ -115,6 +141,7 @@ function render() {
         style="width:${progress}%"></div>
     </div>
 
+    <!-- Habits -->
     <div class="grid grid-cols-2 gap-2 mb-6">
       ${habitList.map(h => `
         <button onclick="toggleHabit('${h}')"
@@ -126,6 +153,17 @@ function render() {
       `).join("")}
     </div>
 
+    <!-- History -->
+    <div class="mb-6">
+      <h2 class="text-lg mb-2">📅 Last 7 Days</h2>
+      <div class="text-sm">
+        ${last7.map(d => `
+          <div>${d.date.slice(0,10)} → ${d.progress}%</div>
+        `).join("") || "No data yet"}
+      </div>
+    </div>
+
+    <!-- Food -->
     <div class="mb-6">
       <h2 class="text-lg mb-2">🍽️ Food</h2>
       <input id="foodInput" placeholder="paneer 100g"
@@ -147,6 +185,7 @@ function render() {
       </div>
     </div>
 
+    <!-- Weight -->
     <div>
       <h2 class="text-lg mb-2">⚖️ Weight</h2>
       <input id="weightInput" placeholder="Enter weight"
@@ -166,6 +205,7 @@ function render() {
   `;
 }
 
+// expose
 window.toggleHabit = toggleHabit;
 window.addFood = addFood;
 window.addWeight = addWeight;
