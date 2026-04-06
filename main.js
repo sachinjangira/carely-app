@@ -50,7 +50,6 @@ if (state.date !== today) {
 
 const habitList = Object.keys(state.habits);
 
-// Toggle habit
 function toggleHabit(habit) {
   state.habits[habit] = !state.habits[habit];
 
@@ -66,7 +65,7 @@ function getProgress() {
   return Math.round((done / habitList.length) * 100);
 }
 
-// -------- SMART MACRO ENGINE --------
+// Smart macros
 function parseFood(input) {
   const db = {
     paneer: { p: 18, c: 2, f: 20, cal: 260, base: 100 },
@@ -77,18 +76,11 @@ function parseFood(input) {
 
   let parts = input.toLowerCase().split(" ");
   let food = parts[0];
-
-  let quantity = 1;
-
-  if (parts[1]) {
-    quantity = parseInt(parts[1]) || 1;
-  }
+  let quantity = parts[1] ? parseInt(parts[1]) || 1 : 1;
 
   let data = db[food];
 
-  if (!data) {
-    return { name: input, p: 0, c: 0, f: 0, cal: 0 };
-  }
+  if (!data) return { name: input, p: 0, c: 0, f: 0, cal: 0 };
 
   let factor = quantity / data.base;
 
@@ -101,29 +93,24 @@ function parseFood(input) {
   };
 }
 
-// Add food
 function addFood(value) {
   if (!value) return;
 
   let parsed = parseFood(value);
-
   state.foods.push(parsed);
 
-  // Clear input
   document.getElementById("foodInput").value = "";
 
   save();
   render();
 }
 
-// Clear all food
 function clearFood() {
   state.foods = [];
   save();
   render();
 }
 
-// SAFE totals (fix NaN)
 function getTotals() {
   return state.foods.reduce((acc, f) => {
     acc.p += f.p || 0;
@@ -134,76 +121,55 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// -------- UI --------
-function getLast7Days() {
-  return state.history.slice(-7);
-}
-
-function getStats() {
-  const last7 = getLast7Days();
-  if (last7.length === 0) return null;
-
-  let avg = Math.round(last7.reduce((a, b) => a + b.progress, 0) / last7.length);
-  let best = Math.max(...last7.map(d => d.progress));
-  let worst = Math.min(...last7.map(d => d.progress));
-
-  return { avg, best, worst };
-}
-
+// UI helpers
 function getFeedback() {
   const progress = getProgress();
 
   if (progress === 100) return "🔥 Perfect day!";
   if (progress >= 80) return "💪 Strong consistency";
-  if (progress >= 50) return "⚠️ Can improve discipline";
+  if (progress >= 50) return "⚠️ Keep pushing";
   return "🚨 Focus — you're slipping";
 }
 
 // -------- RENDER --------
 function render() {
   const progress = getProgress();
-  const last7 = getLast7Days();
-  const stats = getStats();
   const totals = getTotals();
+
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
 
   app.innerHTML = `
   <div class="p-4">
 
-    <h1 class="text-2xl font-bold mb-2">Carely</h1>
+    <h1 class="text-2xl font-bold mb-4">Carely</h1>
 
     <div class="flex justify-between mb-4">
-      <div>🔥 Streak: ${state.streak}</div>
-      <div>🏆 Score: ${state.score}</div>
+      <div>🔥 ${state.streak}</div>
+      <div>🏆 ${state.score}</div>
     </div>
 
-    <div class="mb-2 text-lg">${getFeedback()}</div>
-
-    <div class="mb-2">Today: ${progress}%</div>
-
-    <div class="w-full bg-gray-700 h-3 rounded mb-4">
-      <div class="bg-green-400 h-3 rounded"
-        style="width:${progress}%"></div>
+    <!-- Circular Progress -->
+    <div class="flex justify-center mb-4">
+      <svg width="120" height="120">
+        <circle cx="60" cy="60" r="${radius}" stroke="#444" stroke-width="10" fill="none"/>
+        <circle cx="60" cy="60" r="${radius}" stroke="#22c55e" stroke-width="10" fill="none"
+          stroke-dasharray="${circumference}"
+          stroke-dashoffset="${offset}"
+          stroke-linecap="round"
+          transform="rotate(-90 60 60)"/>
+      </svg>
+      <div class="absolute mt-10 text-lg">${progress}%</div>
     </div>
 
-    <!-- Graph -->
-    <div class="flex items-end gap-2 h-24 mb-6">
-      ${last7.map(d => `
-        <div class="flex-1 bg-green-500"
-          style="height:${d.progress}%"></div>
-      `).join("")}
-    </div>
-
-    ${stats ? `
-      <div class="mb-4 text-sm">
-        Avg: ${stats.avg}% | Best: ${stats.best}% | Worst: ${stats.worst}%
-      </div>
-    ` : ""}
+    <div class="text-center mb-4">${getFeedback()}</div>
 
     <!-- Habits -->
-    <div class="grid grid-cols-2 gap-2 mb-6">
+    <div class="grid grid-cols-2 gap-3 mb-6">
       ${habitList.map(h => `
         <button onclick="toggleHabit('${h}')"
-          class="p-3 rounded border ${
+          class="p-3 rounded-xl border ${
             state.habits[h] ? 'bg-green-600' : ''
           }">
           ${h}
@@ -213,9 +179,9 @@ function render() {
 
     <!-- Food -->
     <div>
-      <h2 class="text-lg mb-2">🍽️ Food</h2>
+      <h2 class="mb-2">🍽️ Food</h2>
 
-      <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 200g"/>
+      <input id="foodInput" class="text-black p-2 w-full mb-2 rounded" placeholder="paneer 200g"/>
 
       <button onclick="addFood(document.getElementById('foodInput').value)"
         class="bg-blue-500 w-full p-2 rounded mb-2">
@@ -229,7 +195,7 @@ function render() {
 
       <div class="text-sm">
         ${state.foods.map(f => `
-          <div>
+          <div class="mb-1">
             ${f.name} → 
             Protein: ${f.p}g | 
             Carbs: ${f.c}g | 
