@@ -15,7 +15,6 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
     Workout: false,
     Steps: false,
   },
-  weight: [],
   foods: []
 };
 
@@ -30,8 +29,7 @@ if (state.date !== today) {
 
   state.history.push({
     date: state.date,
-    progress: percent,
-    score: state.score
+    progress: percent
   });
 
   if (state.history.length > 30) state.history.shift();
@@ -71,7 +69,6 @@ function getLast7Days() {
   return state.history.slice(-7);
 }
 
-// Weekly stats
 function getStats() {
   const last7 = getLast7Days();
   if (last7.length === 0) return null;
@@ -83,7 +80,6 @@ function getStats() {
   return { avg, best, worst };
 }
 
-// Smart feedback
 function getFeedback() {
   const progress = getProgress();
 
@@ -98,14 +94,14 @@ function addFood(value) {
   if (!value) return;
 
   const db = {
-    paneer: { p: 18, c: 2, f: 20, cal: 260 },
-    milk: { p: 8, c: 12, f: 8, cal: 150 },
-    curd: { p: 4, c: 5, f: 4, cal: 60 },
-    soya: { p: 25, c: 10, f: 1, cal: 170 }
+    paneer: { p: 18 },
+    milk: { p: 8 },
+    curd: { p: 4 },
+    soya: { p: 25 }
   };
 
   let key = value.toLowerCase().split(" ")[0];
-  let data = db[key] || { p: 0, c: 0, f: 0, cal: 0 };
+  let data = db[key] || { p: 0 };
 
   state.foods.push({ name: value, ...data });
 
@@ -114,20 +110,14 @@ function addFood(value) {
 }
 
 function getTotals() {
-  return state.foods.reduce((acc, f) => {
-    acc.p += f.p;
-    acc.c += f.c;
-    acc.f += f.f;
-    acc.cal += f.cal;
-    return acc;
-  }, { p: 0, c: 0, f: 0, cal: 0 });
+  return state.foods.reduce((acc, f) => acc + f.p, 0);
 }
 
 function render() {
   const progress = getProgress();
   const last7 = getLast7Days();
   const stats = getStats();
-  const totals = getTotals();
+  const totalProtein = getTotals();
 
   app.innerHTML = `
   <div class="p-4">
@@ -144,7 +134,7 @@ function render() {
     <div class="mb-2">Today: ${progress}%</div>
 
     <div class="w-full bg-gray-700 h-3 rounded mb-4">
-      <div class="bg-green-400 h-3 rounded transition-all"
+      <div class="bg-green-400 h-3 rounded"
         style="width:${progress}%"></div>
     </div>
 
@@ -156,7 +146,6 @@ function render() {
       `).join("")}
     </div>
 
-    <!-- Weekly Stats -->
     ${stats ? `
       <div class="mb-4 text-sm">
         Avg: ${stats.avg}% | Best: ${stats.best}% | Worst: ${stats.worst}%
@@ -176,8 +165,26 @@ function render() {
     </div>
 
     <!-- Food -->
-    <div class="mb-6">
+    <div>
       <h2>🍽️ Food</h2>
       <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 100g"/>
       <button onclick="addFood(document.getElementById('foodInput').value)"
-        class="bg-blue-500 w-full
+        class="bg-blue-500 w-full p-2 rounded">Add</button>
+
+      <div class="mt-2 text-sm">
+        ${state.foods.map(f => `<div>${f.name}</div>`).join("")}
+      </div>
+
+      <div class="mt-2 font-semibold">
+        Total Protein: ${totalProtein}g
+      </div>
+    </div>
+
+  </div>
+  `;
+}
+
+window.toggleHabit = toggleHabit;
+window.addFood = addFood;
+
+render();
