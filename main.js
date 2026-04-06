@@ -69,7 +69,6 @@ function getProgress() {
 // FEEDBACK
 function getFeedback() {
   const progress = getProgress();
-
   if (progress === 100) return "Perfect day";
   if (progress >= 80) return "Strong consistency";
   if (progress >= 50) return "Keep pushing";
@@ -214,7 +213,7 @@ function render() {
     `;
   }
 
-  // STATS (FIXED)
+  // STATS
   if (state.page === "stats") {
     const last7 = state.history.slice(-7);
     const days = ["S","M","T","W","T","F","S"];
@@ -225,24 +224,19 @@ function render() {
         <div class="text-sm mb-2 text-gray-300">Last 7 Days</div>
 
         <div class="flex items-end justify-between h-32">
-
           ${last7.length === 0 
             ? `<div class="text-gray-400 text-center w-full">No data yet</div>` 
             : last7.map(d => `
               <div class="flex flex-col items-center flex-1">
-
                 <div class="w-6 bg-green-500 rounded"
                   style="height:${Math.max(d.progress,5)}%">
                 </div>
-
                 <div class="text-xs mt-1 text-gray-400">
                   ${days[new Date(d.date).getDay()]}
                 </div>
-
               </div>
             `).join("")
           }
-
         </div>
       </div>
 
@@ -264,7 +258,7 @@ function render() {
   }
 
   app.innerHTML = `
-    <div class="p-4 pb-24 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
+    <div class="p-4 pb-28 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
 
       <h1 class="text-3xl text-center mb-4 text-green-400">Carely</h1>
 
@@ -275,25 +269,22 @@ function render() {
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur border-t border-gray-700 flex justify-around items-center py-3">
+      <div class="fixed bottom-0 left-0 right-0 z-[9999] bg-black border-t border-gray-700 flex">
 
-        <button onclick="switchPage('home')"
-          class="flex flex-col items-center px-4 ${state.page==='home'?'text-green-400':'text-gray-400'}">
+        <div onclick="switchPage('home')" style="flex:1;text-align:center;padding:10px;color:${state.page==='home'?'#22c55e':'#888'}">
           ${icons.home}
-          <span class="text-xs mt-1">Home</span>
-        </button>
+          <div style="font-size:10px;">Home</div>
+        </div>
 
-        <button onclick="switchPage('food')"
-          class="flex flex-col items-center px-4 ${state.page==='food'?'text-green-400':'text-gray-400'}">
+        <div onclick="switchPage('food')" style="flex:1;text-align:center;padding:10px;color:${state.page==='food'?'#22c55e':'#888'}">
           ${icons.food}
-          <span class="text-xs mt-1">Food</span>
-        </button>
+          <div style="font-size:10px;">Food</div>
+        </div>
 
-        <button onclick="switchPage('stats')"
-          class="flex flex-col items-center px-4 ${state.page==='stats'?'text-green-400':'text-gray-400'}">
+        <div onclick="switchPage('stats')" style="flex:1;text-align:center;padding:10px;color:${state.page==='stats'?'#22c55e':'#888'}">
           ${icons.stats}
-          <span class="text-xs mt-1">Stats</span>
-        </button>
+          <div style="font-size:10px;">Stats</div>
+        </div>
 
       </div>
 
