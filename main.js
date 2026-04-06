@@ -81,12 +81,14 @@ function parseFood(input) {
   let quantity = 1;
 
   if (parts[1]) {
-    quantity = parseInt(parts[1]);
+    quantity = parseInt(parts[1]) || 1;
   }
 
   let data = db[food];
 
-  if (!data) return { name: input, p: 0, c: 0, f: 0, cal: 0 };
+  if (!data) {
+    return { name: input, p: 0, c: 0, f: 0, cal: 0 };
+  }
 
   let factor = quantity / data.base;
 
@@ -99,7 +101,7 @@ function parseFood(input) {
   };
 }
 
-// Add food (FIXED)
+// Add food
 function addFood(value) {
   if (!value) return;
 
@@ -107,25 +109,32 @@ function addFood(value) {
 
   state.foods.push(parsed);
 
-  // Clear input field
+  // Clear input
   document.getElementById("foodInput").value = "";
 
   save();
   render();
 }
 
-// Totals
+// Clear all food
+function clearFood() {
+  state.foods = [];
+  save();
+  render();
+}
+
+// SAFE totals (fix NaN)
 function getTotals() {
   return state.foods.reduce((acc, f) => {
-    acc.p += f.p;
-    acc.c += f.c;
-    acc.f += f.f;
-    acc.cal += f.cal;
+    acc.p += f.p || 0;
+    acc.c += f.c || 0;
+    acc.f += f.f || 0;
+    acc.cal += f.cal || 0;
     return acc;
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// -------- UI HELPERS --------
+// -------- UI --------
 function getLast7Days() {
   return state.history.slice(-7);
 }
@@ -205,14 +214,20 @@ function render() {
     <!-- Food -->
     <div>
       <h2 class="text-lg mb-2">🍽️ Food</h2>
+
       <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 200g"/>
 
       <button onclick="addFood(document.getElementById('foodInput').value)"
-        class="bg-blue-500 w-full p-2 rounded">
+        class="bg-blue-500 w-full p-2 rounded mb-2">
         Add
       </button>
 
-      <div class="mt-2 text-sm">
+      <button onclick="clearFood()"
+        class="bg-red-500 w-full p-2 rounded mb-3">
+        Clear Food
+      </button>
+
+      <div class="text-sm">
         ${state.foods.map(f => `
           <div>
             ${f.name} → 
@@ -237,8 +252,8 @@ function render() {
   `;
 }
 
-// expose
 window.toggleHabit = toggleHabit;
 window.addFood = addFood;
+window.clearFood = clearFood;
 
 render();
