@@ -218,25 +218,34 @@ function render() {
     const last7 = state.history.slice(-7);
     const days = ["S","M","T","W","T","F","S"];
 
+    let chartData = Array(7).fill(0);
+    last7.forEach((d, i) => {
+      chartData[i] = d.progress;
+    });
+
     content = `
       <div class="bg-white/10 p-4 rounded-2xl shadow mb-4">
 
         <div class="text-sm mb-2 text-gray-300">Last 7 Days</div>
 
         <div class="flex items-end justify-between h-32">
-          ${last7.length === 0 
-            ? `<div class="text-gray-400 text-center w-full">No data yet</div>` 
-            : last7.map(d => `
-              <div class="flex flex-col items-center flex-1">
-                <div class="w-6 bg-green-500 rounded"
-                  style="height:${Math.max(d.progress,5)}%">
-                </div>
-                <div class="text-xs mt-1 text-gray-400">
-                  ${days[new Date(d.date).getDay()]}
-                </div>
+
+          ${chartData.map((val, i) => `
+            <div class="flex flex-col items-center flex-1">
+
+              <div class="w-6 rounded ${
+                val ? 'bg-green-500' : 'bg-gray-700'
+              }"
+                style="height:${val ? Math.max(val,5) : 10}%">
               </div>
-            `).join("")
-          }
+
+              <div class="text-xs mt-1 text-gray-400">
+                ${days[i]}
+              </div>
+
+            </div>
+          `).join("")}
+
         </div>
       </div>
 
@@ -271,17 +280,20 @@ function render() {
 
       <div class="fixed bottom-0 left-0 right-0 z-[9999] bg-black border-t border-gray-700 flex">
 
-        <div onclick="switchPage('home')" style="flex:1;text-align:center;padding:10px;color:${state.page==='home'?'#22c55e':'#888'}">
+        <div onclick="switchPage('home')" 
+          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='home'?'#22c55e':'#888'}">
           ${icons.home}
           <div style="font-size:10px;">Home</div>
         </div>
 
-        <div onclick="switchPage('food')" style="flex:1;text-align:center;padding:10px;color:${state.page==='food'?'#22c55e':'#888'}">
+        <div onclick="switchPage('food')" 
+          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='food'?'#22c55e':'#888'}">
           ${icons.food}
           <div style="font-size:10px;">Food</div>
         </div>
 
-        <div onclick="switchPage('stats')" style="flex:1;text-align:center;padding:10px;color:${state.page==='stats'?'#22c55e':'#888'}">
+        <div onclick="switchPage('stats')" 
+          style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:${state.page==='stats'?'#22c55e':'#888'}">
           ${icons.stats}
           <div style="font-size:10px;">Stats</div>
         </div>
