@@ -19,31 +19,26 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   foods: []
 };
 
-// Save function
 function save() {
   localStorage.setItem("carely", JSON.stringify(state));
 }
 
-// Daily reset + history save
+// Daily reset
 if (state.date !== today) {
   const completed = Object.values(state.habits).filter(v => v).length;
   const percent = Math.round((completed / 6) * 100);
 
-  // Save yesterday into history
   state.history.push({
     date: state.date,
     progress: percent,
     score: state.score
   });
 
-  // Keep only last 30 days
   if (state.history.length > 30) state.history.shift();
 
-  // Streak logic
   if (percent >= 80) state.streak += 1;
   else state.streak = 0;
 
-  // Reset for today
   state.date = today;
   state.habits = {
     Breakfast: false,
@@ -57,7 +52,6 @@ if (state.date !== today) {
 
 const habitList = Object.keys(state.habits);
 
-// Toggle habit
 function toggleHabit(habit) {
   state.habits[habit] = !state.habits[habit];
 
@@ -68,21 +62,38 @@ function toggleHabit(habit) {
   render();
 }
 
-// Progress
 function getProgress() {
   const done = habitList.filter(h => state.habits[h]).length;
   return Math.round((done / habitList.length) * 100);
 }
 
-// Add weight
-function addWeight(value) {
-  if (!value) return;
-  state.weight.push(value);
-  save();
-  render();
+function getLast7Days() {
+  return state.history.slice(-7);
 }
 
-// Food system
+// Weekly stats
+function getStats() {
+  const last7 = getLast7Days();
+  if (last7.length === 0) return null;
+
+  let avg = Math.round(last7.reduce((a, b) => a + b.progress, 0) / last7.length);
+  let best = Math.max(...last7.map(d => d.progress));
+  let worst = Math.min(...last7.map(d => d.progress));
+
+  return { avg, best, worst };
+}
+
+// Smart feedback
+function getFeedback() {
+  const progress = getProgress();
+
+  if (progress === 100) return "🔥 Perfect day!";
+  if (progress >= 80) return "💪 Strong consistency";
+  if (progress >= 50) return "⚠️ Can improve discipline";
+  return "🚨 Focus — you're slipping";
+}
+
+// Food
 function addFood(value) {
   if (!value) return;
 
@@ -102,7 +113,6 @@ function addFood(value) {
   render();
 }
 
-// Macro totals
 function getTotals() {
   return state.foods.reduce((acc, f) => {
     acc.p += f.p;
@@ -113,16 +123,11 @@ function getTotals() {
   }, { p: 0, c: 0, f: 0, cal: 0 });
 }
 
-// Last 7 days
-function getLast7Days() {
-  return state.history.slice(-7).reverse();
-}
-
-// Render UI
 function render() {
   const progress = getProgress();
-  const totals = getTotals();
   const last7 = getLast7Days();
+  const stats = getStats();
+  const totals = getTotals();
 
   app.innerHTML = `
   <div class="p-4">
@@ -134,80 +139,45 @@ function render() {
       <div>🏆 Score: ${state.score}</div>
     </div>
 
-    <div class="mb-2">Progress: ${progress}%</div>
+    <div class="mb-2 text-lg">${getFeedback()}</div>
 
-    <div class="w-full bg-gray-700 h-3 rounded mb-4 overflow-hidden">
-      <div class="bg-green-400 h-3 rounded transition-all duration-300"
+    <div class="mb-2">Today: ${progress}%</div>
+
+    <div class="w-full bg-gray-700 h-3 rounded mb-4">
+      <div class="bg-green-400 h-3 rounded transition-all"
         style="width:${progress}%"></div>
     </div>
+
+    <!-- Graph -->
+    <div class="flex items-end gap-2 h-24 mb-6">
+      ${last7.map(d => `
+        <div class="flex-1 bg-green-500"
+          style="height:${d.progress}%"></div>
+      `).join("")}
+    </div>
+
+    <!-- Weekly Stats -->
+    ${stats ? `
+      <div class="mb-4 text-sm">
+        Avg: ${stats.avg}% | Best: ${stats.best}% | Worst: ${stats.worst}%
+      </div>
+    ` : ""}
 
     <!-- Habits -->
     <div class="grid grid-cols-2 gap-2 mb-6">
       ${habitList.map(h => `
         <button onclick="toggleHabit('${h}')"
-          class="p-3 rounded border transition ${
-            state.habits[h] ? 'bg-green-600 scale-95' : ''
+          class="p-3 rounded border ${
+            state.habits[h] ? 'bg-green-600' : ''
           }">
           ${h}
         </button>
       `).join("")}
     </div>
 
-    <!-- History -->
-    <div class="mb-6">
-      <h2 class="text-lg mb-2">📅 Last 7 Days</h2>
-      <div class="text-sm">
-        ${last7.map(d => `
-          <div>${d.date.slice(0,10)} → ${d.progress}%</div>
-        `).join("") || "No data yet"}
-      </div>
-    </div>
-
     <!-- Food -->
     <div class="mb-6">
-      <h2 class="text-lg mb-2">🍽️ Food</h2>
-      <input id="foodInput" placeholder="paneer 100g"
-        class="text-black p-2 w-full rounded mb-2"/>
-
+      <h2>🍽️ Food</h2>
+      <input id="foodInput" class="text-black p-2 w-full mb-2" placeholder="paneer 100g"/>
       <button onclick="addFood(document.getElementById('foodInput').value)"
-        class="w-full bg-blue-500 p-2 rounded">
-        Add Food
-      </button>
-
-      <div class="text-sm mt-2">
-        ${state.foods.map(f => `
-          <div>${f.name} → P:${f.p} C:${f.c} F:${f.f}</div>
-        `).join("")}
-      </div>
-
-      <div class="mt-2 font-semibold">
-        Total → P:${totals.p} C:${totals.c} F:${totals.f} Cal:${totals.cal}
-      </div>
-    </div>
-
-    <!-- Weight -->
-    <div>
-      <h2 class="text-lg mb-2">⚖️ Weight</h2>
-      <input id="weightInput" placeholder="Enter weight"
-        class="text-black p-2 w-full rounded mb-2"/>
-
-      <button onclick="addWeight(document.getElementById('weightInput').value)"
-        class="w-full bg-purple-500 p-2 rounded">
-        Add Weight
-      </button>
-
-      <div class="text-sm mt-2">
-        ${state.weight.join(" → ")}
-      </div>
-    </div>
-
-  </div>
-  `;
-}
-
-// expose
-window.toggleHabit = toggleHabit;
-window.addFood = addFood;
-window.addWeight = addWeight;
-
-render();
+        class="bg-blue-500 w-full
