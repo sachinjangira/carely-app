@@ -10,8 +10,6 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   page: "home",
   weight: [],
   foods: [],
-  meals: [],
-  currentMeal: [],
   habits: {
     Breakfast: false,
     Lunch: false,
@@ -39,21 +37,20 @@ if (state.date !== today) {
 
   state.date = today;
   Object.keys(state.habits).forEach(k => state.habits[k] = false);
-  state.currentMeal = [];
 }
 
 // FOOD DB
 const foodDB = {
-  paneer: { p: 18, c: 2, f: 20, cal: 260 },
-  milk: { p: 3.5, c: 5, f: 3.5, cal: 60 },
-  curd: { p: 3, c: 4, f: 3, cal: 50 },
-  roti: { p: 3, c: 15, f: 1, cal: 80 },
-  rice: { p: 2.5, c: 28, f: 0.3, cal: 130 },
-  dal: { p: 9, c: 20, f: 1, cal: 120 },
-  soya: { p: 25, c: 10, f: 1, cal: 170 },
-  tofu: { p: 8, c: 2, f: 4, cal: 80 },
-  pizza: { p: 11, c: 33, f: 10, cal: 285 },
-  burger: { p: 12, c: 30, f: 12, cal: 295 }
+  paneer: { p: 18, c: 2, f: 20 },
+  milk: { p: 3.5, c: 5, f: 3.5 },
+  curd: { p: 3, c: 4, f: 3 },
+  roti: { p: 3, c: 15, f: 1 },
+  rice: { p: 2.5, c: 28, f: 0.3 },
+  dal: { p: 9, c: 20, f: 1 },
+  soya: { p: 25, c: 10, f: 1 },
+  tofu: { p: 8, c: 2, f: 4 },
+  pizza: { p: 11, c: 33, f: 10 },
+  burger: { p: 12, c: 30, f: 12 }
 };
 
 // NAV
@@ -71,7 +68,7 @@ function toggleHabit(habit) {
   render();
 }
 
-// FOOD FUNCTIONS (SAFE)
+// FOOD
 function showSuggestions(value) {
   const el = document.getElementById("suggestions");
   if (!el) return;
@@ -86,11 +83,8 @@ function showSuggestions(value) {
 }
 
 function selectFood(f) {
-  const input = document.getElementById("foodSearch");
-  const sug = document.getElementById("suggestions");
-
-  if (input) input.value = f;
-  if (sug) sug.innerHTML = "";
+  document.getElementById("foodSearch").value = f;
+  document.getElementById("suggestions").innerHTML = "";
 }
 
 function addFood() {
@@ -107,8 +101,7 @@ function addFood() {
     qty,
     p: Math.round(d.p * factor),
     c: Math.round(d.c * factor),
-    f: Math.round(d.f * factor),
-    cal: Math.round(d.cal * factor)
+    f: Math.round(d.f * factor)
   });
 
   save();
@@ -121,7 +114,6 @@ function removeFood(i) {
   render();
 }
 
-// TOTALS
 function totals() {
   return state.foods.reduce((a, f) => {
     a.p += f.p;
@@ -131,18 +123,30 @@ function totals() {
   }, { p: 0, c: 0, f: 0 });
 }
 
-// WEIGHT
-function addWeight() {
-  const w = parseFloat(document.getElementById("weight")?.value);
-  if (!w) return;
-  state.weight.push(w);
-  save();
-  render();
-}
-
 // RENDER
 function render() {
   let content = "";
+
+  // HOME
+  if (state.page === "home") {
+    content = `
+      <div class="bg-white/10 backdrop-blur p-4 rounded-2xl mb-4 text-center">
+        <div class="text-xl text-green-400">${state.score} Score</div>
+        <div class="text-sm text-gray-400">🔥 ${state.streak} day streak</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        ${Object.keys(state.habits).map(h=>`
+          <div onclick="toggleHabit('${h}')"
+            class="p-4 rounded-2xl text-center ${
+              state.habits[h]?'bg-green-500':'bg-white/10'
+            }">
+            ${h}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
 
   // FOOD
   if (state.page === "food") {
@@ -169,7 +173,9 @@ function render() {
           </div>
         `).join("")}
 
-        <div>Protein: ${t.p}g | Carbs: ${t.c}g | Fat: ${t.f}g</div>
+        <div class="mt-2 font-bold">
+          Protein: ${t.p}g | Carbs: ${t.c}g | Fat: ${t.f}g
+        </div>
       </div>
     `;
   }
@@ -179,12 +185,14 @@ function render() {
     const data = state.history.slice(-7);
 
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl mb-4">
+      <div class="bg-white/10 p-4 rounded-2xl">
         <div class="flex h-32">
           ${Array(7).fill(0).map((_,i)=>{
             const val = data[i]?.progress || 0;
-            return `<div class="flex-1">
-              <div style="height:${val||10}%" class="${val?'bg-green-500':'bg-gray-700'} w-4"></div>
+            return `<div class="flex-1 flex items-end justify-center">
+              <div style="height:${val||10}%"
+                class="${val?'bg-green-500':'bg-gray-700'} w-4 rounded">
+              </div>
             </div>`;
           }).join("")}
         </div>
@@ -192,28 +200,14 @@ function render() {
     `;
   }
 
-  // HOME
-  if (state.page === "home") {
-    content = `
-      <div class="grid grid-cols-2 gap-2">
-        ${Object.keys(state.habits).map(h=>`
-          <div onclick="toggleHabit('${h}')"
-            class="p-3 rounded ${state.habits[h]?'bg-green-500':'bg-gray-700'} text-center">
-            ${h}
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
   app.innerHTML = `
-    <div class="p-4 pb-28 min-h-screen bg-black text-white">
+    <div class="p-4 pb-28 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
 
       <h1 class="text-center text-2xl text-green-400 mb-4">Carely</h1>
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-black flex">
+      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex">
         <div onclick="switchPage('home')" style="flex:1;text-align:center">🏠</div>
         <div onclick="switchPage('food')" style="flex:1;text-align:center">🍽</div>
         <div onclick="switchPage('stats')" style="flex:1;text-align:center">📊</div>
@@ -229,6 +223,5 @@ window.showSuggestions = showSuggestions;
 window.selectFood = selectFood;
 window.addFood = addFood;
 window.removeFood = removeFood;
-window.addWeight = addWeight;
 
 render();
