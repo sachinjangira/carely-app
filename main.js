@@ -42,13 +42,26 @@ if(state.date !== today){
 
 // ---------- ICONS ----------
 const icons = {
-  home:`<svg viewBox="0 0 24 24" fill="none"><path d="M3 10L12 3l9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/></svg>`,
-  meal:`<svg viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2"/></svg>`,
-  gym:`<svg viewBox="0 0 24 24"><path d="M2 12h20" stroke="currentColor" stroke-width="2"/></svg>`,
-  grooming:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/></svg>`,
-  mind:`<svg viewBox="0 0 24 24"><path d="M12 2v20" stroke="currentColor" stroke-width="2"/></svg>`
-};
+  home: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M3 10L12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>
+  </svg>`,
 
+  meal: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M4 3h16v18H4z"/>
+  </svg>`,
+
+  gym: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M2 12h20M6 6v12M18 6v12"/>
+  </svg>`,
+
+  grooming: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="8"/>
+  </svg>`,
+
+  mind: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 2v20M2 12h20"/>
+  </svg>`
+};
 // ---------- HABITS ----------
 const habits = {
   workout:{label:"Workout",points:20},
@@ -182,10 +195,18 @@ function section(t){
 // ---------- NAV ----------
 function nav(){
   return `
-  <div style="position:fixed;bottom:0;width:100%;
-  display:flex;justify-content:space-around;
-  padding:12px;background:rgba(0,0,0,0.7);
-  backdrop-filter:blur(10px)">
+  <div style="
+    position:fixed;
+    bottom:0;
+    width:100%;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:12px 0;
+    background:rgba(0,0,0,0.7);
+    backdrop-filter:blur(12px);
+    border-top:1px solid rgba(255,255,255,0.1);
+  ">
 
     ${navItem("home",icons.home)}
     ${navItem("meals",icons.meal)}
@@ -199,10 +220,18 @@ function nav(){
 function navItem(p,icon){
   return `
   <div class="nav" data-page="${p}"
-  style="width:26px;height:26px;
-  color:${state.page===p?'#22c55e':'#94a3b8'};
-  transform:${state.page===p?'scale(1.2)':'scale(1)'}">
-  ${icon}
+    style="
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      width:48px;
+      height:48px;
+      border-radius:12px;
+      color:${state.page===p ? '#22c55e' : '#64748b'};
+      background:${state.page===p ? 'rgba(34,197,94,0.15)' : 'transparent'};
+      transition:0.2s;
+    ">
+    ${icon}
   </div>`;
 }
 
