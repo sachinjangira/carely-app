@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_v6_final";
+const STORAGE = "carely_v7_final";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -67,8 +67,8 @@ function render(){
     ${header()}
     
     <div style="padding:16px">
-      ${goalSelector()}
-      ${state.page === "home" ? calendarCard() : ""}
+      ${state.page==="home" ? goalSelector() : ""}
+      ${state.page==="home" ? calendarCard() : ""}
       ${screen()}
     </div>
 
@@ -132,16 +132,14 @@ function task(label,key){
   </div>`;
 }
 
-// ---------- CALENDAR (WITH DAYS) ----------
+// ---------- CALENDAR ----------
 function calendarCard(){
 
-  const days = ["M","T","W","T","F","S","S"];
   let grid = "";
 
   for(let i=6;i>=0;i--){
     const d = new Date();
     d.setDate(d.getDate()-i);
-    const label = d.getDate();
 
     const rec = state.history.find(x=>x.date===d.toISOString().slice(0,10));
     const score = rec ? rec.score : 0;
@@ -153,7 +151,7 @@ function calendarCard(){
 
     grid += `
     <div style="text-align:center">
-      <div style="font-size:11px;opacity:0.6">${label}</div>
+      <div style="font-size:11px;opacity:0.6">${d.getDate()}</div>
       <div style="
         width:14px;height:14px;margin:auto;
         border-radius:4px;background:${color}">
@@ -190,7 +188,8 @@ function goalSelector(){
         text-align:center;
         padding:10px;
         border-radius:10px;
-        background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'}">
+        background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'};
+        font-size:13px">
         ${GOALS[g].name}
       </div>
     `).join("")}
@@ -209,21 +208,10 @@ function box(t){
 }
 
 // ---------- PAGES ----------
-function meals(){
-  return `<div>Meals coming soon</div>`;
-}
-
-function fitness(){
-  return `<div>Workout plan coming soon</div>`;
-}
-
-function grooming(){
-  return `<div>Grooming tasks</div>`;
-}
-
-function mind(){
-  return `<div>Posture & confidence</div>`;
-}
+function meals(){ return `<div>Meals coming soon</div>`; }
+function fitness(){ return `<div>Workout plan coming soon</div>`; }
+function grooming(){ return `<div>Grooming tasks</div>`; }
+function mind(){ return `<div>Posture & confidence</div>`; }
 
 // ---------- ROUTER ----------
 function screen(){
