@@ -1,14 +1,11 @@
 const app = document.getElementById("app");
 
-// ---------- SAFE STATE ----------
 const today = new Date().toISOString().slice(0,10);
 
+// ---------- SAFE STATE ----------
 function getState(){
-  try {
-    return JSON.parse(localStorage.getItem("carely_final")) || null;
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem("carely_final")) || null; }
+  catch { return null; }
 }
 
 let state = getState() || {
@@ -32,7 +29,7 @@ function save(){
   localStorage.setItem("carely_final", JSON.stringify(state));
 }
 
-// ---------- DAILY RESET ----------
+// ---------- RESET ----------
 if(state.date !== today){
   const done = Object.values(state.habits).filter(Boolean).length;
   const percent = Math.round((done/5)*100);
@@ -45,7 +42,6 @@ if(state.date !== today){
   state.date = today;
   state.score = 0;
   state.foods = [];
-
   Object.keys(state.habits).forEach(k=>state.habits[k]=false);
   save();
 }
@@ -61,11 +57,10 @@ const habits = {
 
 // ---------- RENDER ----------
 function render(){
-  if(!app) return;
-
   app.innerHTML = `
-    <div style="min-height:100vh;padding-bottom:90px;color:white;
-    background:linear-gradient(135deg,#020617,#0f172a,#1e293b)">
+    <div style="min-height:100vh;padding-bottom:90px;
+    background:linear-gradient(145deg,#020617,#0f172a,#1e293b);
+    font-family:system-ui;color:white">
 
       ${header()}
       ${page()}
@@ -80,19 +75,21 @@ function render(){
 function header(){
   return `
     <div style="padding:16px">
-      <div style="padding:16px;border-radius:18px;
-      background:rgba(255,255,255,0.08)">
+
+      <div style="padding:16px;border-radius:20px;
+      background:rgba(255,255,255,0.08);
+      box-shadow:0 10px 25px rgba(0,0,0,0.3)">
 
         <div style="display:flex;justify-content:space-between">
-          <div>Score</div>
-          <div style="color:#22c55e">${state.score}</div>
+          <div style="font-size:18px">Score</div>
+          <div style="color:#22c55e;font-weight:600">${state.score}</div>
         </div>
 
-        <div style="background:#374151;height:6px;border-radius:6px;margin-top:8px">
+        <div style="background:#374151;height:6px;border-radius:6px;margin-top:10px">
           <div style="background:#22c55e;height:6px;border-radius:6px;width:${state.score}%"></div>
         </div>
 
-        <div style="font-size:12px;margin-top:8px">
+        <div style="margin-top:8px;font-size:12px;opacity:0.8">
           🔥 ${state.streak} day streak
         </div>
 
@@ -106,18 +103,23 @@ function home(){
   return `
     <div style="padding:16px">
 
-      <div style="margin-bottom:10px">Today's Tasks</div>
+      ${graphSection()}
+
+      <div style="margin-top:16px;font-size:14px;opacity:0.7">Today's Tasks</div>
 
       ${Object.keys(habits).map(k=>`
         <div class="habit" data-habit="${k}"
-        style="padding:12px;margin-bottom:8px;border-radius:12px;
-        background:${state.habits[k]?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.08)'}">
+        style="padding:14px;margin-top:10px;border-radius:14px;
+        background:${state.habits[k]?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.08)'};
+        box-shadow:0 5px 15px rgba(0,0,0,0.2);
+        transition:0.2s">
 
-        ${habits[k].label} (+${habits[k].points})
+        ${habits[k].label}
+        <span style="float:right;color:#22c55e">+${habits[k].points}</span>
+
         </div>
       `).join("")}
 
-      ${calendarStrip()}
       ${weeklyReport()}
       ${photoSection()}
 
@@ -125,24 +127,37 @@ function home(){
   `;
 }
 
-// ---------- CALENDAR ----------
-function calendarStrip(){
-  const last7 = state.history.slice(-7);
+// ---------- GRAPH ----------
+function graphSection(){
+  const data = state.history.slice(-7);
+
+  if(data.length === 0) return "";
 
   return `
-    <div style="display:flex;gap:6px;margin-top:16px">
-      ${last7.map(d=>`
-        <div style="flex:1;padding:6px;text-align:center;
-        border-radius:8px;
-        background:${d.score>=70?'#22c55e':'#374151'}">
-        ${new Date(d.date).getDate()}
-        </div>
-      `).join("")}
+    <div style="padding:16px;border-radius:16px;
+    background:rgba(255,255,255,0.08);
+    margin-bottom:16px">
+
+      <div style="margin-bottom:10px;font-size:14px">Last 7 Days</div>
+
+      <div style="display:flex;align-items:flex-end;height:120px;gap:6px">
+        ${data.map(d=>`
+          <div style="flex:1;text-align:center">
+            <div style="background:#22c55e;
+              height:${d.score}%;
+              border-radius:6px"></div>
+            <div style="font-size:10px;margin-top:4px">
+              ${new Date(d.date).getDate()}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
     </div>
   `;
 }
 
-// ---------- WEEKLY REPORT ----------
+// ---------- WEEKLY ----------
 function weeklyReport(){
   const last7 = state.history.slice(-7);
   if(last7.length===0) return "";
@@ -157,11 +172,11 @@ function weeklyReport(){
   `;
 }
 
-// ---------- PHOTOS ----------
+// ---------- PHOTO ----------
 function photoSection(){
   return `
     <div style="margin-top:16px">
-      <div>Progress Photos</div>
+      <div style="margin-bottom:6px">Progress Photos</div>
       <input type="file" id="photoInput"/>
 
       <div style="display:flex;gap:8px;margin-top:8px;overflow:auto">
@@ -173,7 +188,7 @@ function photoSection(){
   `;
 }
 
-// ---------- PAGES ----------
+// ---------- PAGE ----------
 function page(){
   switch(state.page){
     case "home": return home();
@@ -194,7 +209,8 @@ function nav(){
   return `
     <div style="position:fixed;bottom:0;width:100%;
     display:flex;justify-content:space-around;
-    background:rgba(0,0,0,0.7);padding:10px">
+    background:rgba(0,0,0,0.7);padding:12px;
+    backdrop-filter:blur(10px)">
 
       ${navItem("home","🏠")}
       ${navItem("meals","🍽")}
@@ -209,7 +225,8 @@ function nav(){
 function navItem(p,icon){
   return `
     <div class="nav" data-page="${p}"
-    style="font-size:20px;opacity:${state.page===p?1:0.5}">
+    style="font-size:20px;
+    color:${state.page===p?'#22c55e':'#aaa'}">
     ${icon}
     </div>
   `;
@@ -253,5 +270,4 @@ function bindEvents(){
   }
 }
 
-// ---------- INIT ----------
 render();
