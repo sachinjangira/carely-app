@@ -2,7 +2,7 @@ const app = document.getElementById("app");
 
 let today = new Date().toDateString();
 
-let state = JSON.parse(localStorage.getItem("carely")) || {
+let defaultState = {
   date: today,
   score: 0,
   streak: 0,
@@ -10,11 +10,11 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   page: "home",
   foods: [],
   stats: {
-    body: 0,
-    discipline: 0,
-    grooming: 0,
-    presence: 0,
-    communication: 0
+    body: 10,
+    discipline: 10,
+    grooming: 10,
+    presence: 10,
+    communication: 10
   },
   habits: {
     Workout: false,
@@ -26,6 +26,8 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   }
 };
 
+let state = JSON.parse(localStorage.getItem("carely")) || defaultState;
+
 function save() {
   localStorage.setItem("carely", JSON.stringify(state));
 }
@@ -36,7 +38,6 @@ if (state.date !== today) {
   const percent = Math.round((completed / 6) * 100);
 
   state.history.push({ date: state.date, progress: percent });
-
   if (state.history.length > 30) state.history.shift();
 
   state.streak = percent >= 70 ? state.streak + 1 : 0;
@@ -45,9 +46,9 @@ if (state.date !== today) {
   state.score = 0;
 
   Object.keys(state.habits).forEach(k => state.habits[k] = false);
+  save();
 }
 
-// CONFIG
 const habitConfig = {
   Workout: { points: 20, stat: "body" },
   Steps: { points: 10, stat: "body" },
@@ -57,7 +58,6 @@ const habitConfig = {
   Speaking: { points: 10, stat: "communication" }
 };
 
-// FOOD DB
 const foodDB = {
   paneer: { p: 18, c: 2, f: 20, type: "protein" },
   tofu: { p: 8, c: 2, f: 4, type: "protein" },
@@ -70,7 +70,6 @@ const foodDB = {
   burger: { p: 12, c: 30, f: 12, type: "junk" }
 };
 
-// DATA
 const exercises = [
   { name: "Incline Push-up", reps: "3 x 12", video: "https://www.w3schools.com/html/mov_bbb.mp4" },
   { name: "Squats", reps: "3 x 15", video: "https://www.w3schools.com/html/movie.mp4" }
@@ -85,7 +84,7 @@ const recipes = [
   }
 ];
 
-// NAV
+// SAFE NAV
 function switchPage(page) {
   state.page = page;
   save();
@@ -173,105 +172,31 @@ function totals() {
 function render() {
   let content = "";
 
-  // HOME UI
+  // HOME
   if (state.page === "home") {
     const progress = Math.min(state.score, 100);
 
     content = `
-      <div class="mb-4">
-        <div class="bg-white/10 p-4 rounded-2xl">
-          <div class="flex justify-between items-center mb-2">
-            <div class="text-lg font-bold">Level Progress</div>
-            <div class="text-green-400">${state.score}/100</div>
-          </div>
-
-          <div class="w-full bg-gray-700 h-3 rounded-full">
-            <div class="bg-green-500 h-3 rounded-full" style="width:${progress}%"></div>
-          </div>
-
-          <div class="text-sm text-gray-400 mt-2">🔥 ${state.streak} day streak</div>
+      <div class="bg-white/10 p-4 rounded-2xl mb-4">
+        <div class="flex justify-between">
+          <div>Score</div>
+          <div class="text-green-400">${state.score}</div>
         </div>
+
+        <div class="w-full bg-gray-700 h-2 rounded mt-2">
+          <div class="bg-green-500 h-2 rounded" style="width:${progress}%"></div>
+        </div>
+
+        <div class="text-sm mt-2">🔥 ${state.streak} day streak</div>
       </div>
 
-      <div class="text-sm text-gray-400 mb-2">Today's Missions</div>
-
-      <div class="space-y-2">
-        ${Object.keys(state.habits).map(h=>`
-          <div onclick="toggleHabit('${h}')"
-            class="flex justify-between items-center p-3 rounded-xl ${
-              state.habits[h] ? 'bg-green-500/20 border border-green-400' : 'bg-white/10'
-            }">
-
-            <div>${h}</div>
-            <div class="text-sm text-green-400">
-              +${habitConfig[h].points}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  // FOOD UI
-  if (state.page === "food") {
-    const t = totals();
-
-    content = `
-      <div class="bg-white/10 p-4 rounded-2xl">
-
-        <input id="foodSearch" oninput="showSuggestions(this.value)"
-          placeholder="Search food"
-          class="text-black p-2 w-full mb-2 rounded"/>
-
-        <div id="suggestions"></div>
-
-        <input id="qty" placeholder="grams"
-          class="text-black p-2 w-full mb-2 rounded"/>
-
-        <button onclick="addFood()" class="bg-green-500 w-full p-2 rounded mb-3">Add</button>
-
-        ${state.foods.map((f,i)=>`
-          <div class="flex justify-between bg-black/30 p-2 mb-2 rounded">
-            ${f.name} ${f.qty}g
-            <span onclick="removeFood(${i})">❌</span>
-          </div>
-        `).join("")}
-
-        <div class="mt-3 text-center font-bold">
-          Protein: ${t.p}g | Carbs: ${t.c}g | Fat: ${t.f}g
-        </div>
-      </div>
-    `;
-  }
-
-  // TRAINING
-  if (state.page === "training") {
-    content = `
-      ${exercises.map(e=>`
-        <div class="bg-white/10 p-4 rounded-2xl mb-3">
-          <div class="font-bold">${e.name}</div>
-          <div class="text-sm text-gray-400">${e.reps}</div>
-          <video controls class="w-full mt-2 rounded">
-            <source src="${e.video}">
-          </video>
-        </div>
-      `).join("")}
-    `;
-  }
-
-  // RECIPES
-  if (state.page === "recipes") {
-    content = `
-      ${recipes.map(r=>`
-        <div class="bg-white/10 p-4 rounded-2xl mb-3">
-          <div class="font-bold">${r.name}</div>
-          <div class="text-sm text-gray-400">${r.time}</div>
-          <ul class="text-sm mt-2">
-            ${r.steps.map(s=>`<li>- ${s}</li>`).join("")}
-          </ul>
-          <video controls class="w-full mt-2 rounded">
-            <source src="${r.video}">
-          </video>
+      ${Object.keys(state.habits).map(h=>`
+        <div onclick="toggleHabit('${h}')"
+          class="p-3 mb-2 rounded-xl ${
+            state.habits[h] ? 'bg-green-500/30' : 'bg-white/10'
+          } flex justify-between">
+          ${h}
+          <span>+${habitConfig[h].points}</span>
         </div>
       `).join("")}
     `;
@@ -279,16 +204,14 @@ function render() {
 
   // CHARACTER
   if (state.page === "character") {
-    content = `
-      ${Object.entries(state.stats).map(([k,v])=>`
-        <div class="bg-white/10 p-3 rounded-xl mb-2">
-          <div>${k.toUpperCase()}</div>
-          <div class="bg-gray-700 h-2 mt-1 rounded">
-            <div class="bg-green-500 h-2 rounded" style="width:${v}%"></div>
-          </div>
+    content = Object.entries(state.stats).map(([k,v])=>`
+      <div class="bg-white/10 p-3 mb-2 rounded">
+        <div>${k}</div>
+        <div class="bg-gray-700 h-2 mt-1">
+          <div class="bg-green-500 h-2" style="width:${v}%"></div>
         </div>
-      `).join("")}
-    `;
+      </div>
+    `).join("");
   }
 
   // STATS
@@ -296,13 +219,13 @@ function render() {
     const data = state.history.slice(-7);
 
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl">
+      <div class="bg-white/10 p-4 rounded">
         <div class="flex h-32">
           ${Array(7).fill(0).map((_,i)=>{
             const val = data[i]?.progress || 0;
             return `<div class="flex-1 flex items-end justify-center">
-              <div style="height:${val||10}%"
-                class="${val?'bg-green-500':'bg-gray-700'} w-4 rounded">
+              <div style="height:${val}%"
+                class="bg-green-500 w-4">
               </div>
             </div>`;
           }).join("")}
@@ -311,20 +234,68 @@ function render() {
     `;
   }
 
-  app.innerHTML = `
-    <div class="p-4 pb-28 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
+  // TRAINING
+  if (state.page === "training") {
+    content = exercises.map(e=>`
+      <div class="bg-white/10 p-3 mb-2 rounded">
+        <div>${e.name}</div>
+        <video controls class="w-full mt-2">
+          <source src="${e.video}">
+        </video>
+      </div>
+    `).join("");
+  }
 
-      <h1 class="text-center text-xl text-green-400 mb-4">Carely</h1>
+  // RECIPES
+  if (state.page === "recipes") {
+    content = recipes.map(r=>`
+      <div class="bg-white/10 p-3 mb-2 rounded">
+        <div>${r.name}</div>
+        <video controls class="w-full mt-2">
+          <source src="${r.video}">
+        </video>
+      </div>
+    `).join("");
+  }
+
+  // FOOD
+  if (state.page === "food") {
+    const t = totals();
+
+    content = `
+      <input id="foodSearch" oninput="showSuggestions(this.value)" placeholder="Search"
+        class="text-black p-2 w-full mb-2"/>
+
+      <div id="suggestions"></div>
+
+      <input id="qty" placeholder="grams"
+        class="text-black p-2 w-full mb-2"/>
+
+      <button onclick="addFood()" class="bg-green-500 w-full p-2 mb-2">Add</button>
+
+      ${state.foods.map((f,i)=>`
+        <div class="flex justify-between bg-white/10 p-2 mb-1">
+          ${f.name}
+          <span onclick="removeFood(${i})">❌</span>
+        </div>
+      `).join("")}
+
+      <div>Protein: ${t.p}</div>
+    `;
+  }
+
+  app.innerHTML = `
+    <div class="p-4 pb-24 bg-black text-white min-h-screen">
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex text-center text-sm">
-        <div onclick="switchPage('home')" class="flex-1 py-2">🏠</div>
-        <div onclick="switchPage('food')" class="flex-1 py-2">🍽</div>
-        <div onclick="switchPage('training')" class="flex-1 py-2">🏋️</div>
-        <div onclick="switchPage('recipes')" class="flex-1 py-2">🍳</div>
-        <div onclick="switchPage('character')" class="flex-1 py-2">🧬</div>
-        <div onclick="switchPage('stats')" class="flex-1 py-2">📊</div>
+      <div class="fixed bottom-0 left-0 right-0 bg-black flex text-center border-t">
+        <div onclick="switchPage('home')" class="flex-1 p-2">🏠</div>
+        <div onclick="switchPage('food')" class="flex-1 p-2">🍽</div>
+        <div onclick="switchPage('training')" class="flex-1 p-2">🏋️</div>
+        <div onclick="switchPage('recipes')" class="flex-1 p-2">🍳</div>
+        <div onclick="switchPage('character')" class="flex-1 p-2">🧬</div>
+        <div onclick="switchPage('stats')" class="flex-1 p-2">📊</div>
       </div>
 
     </div>
