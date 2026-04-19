@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_elite_v2";
+const STORAGE = "carely_elite_v3";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -47,29 +47,61 @@ function updateLevel(){
   return state.xp % 100;
 }
 
+// ---------- ADAPTIVE ENGINE ----------
+function getPlan(){
+
+  let difficulty = "normal";
+
+  if(state.streak === 0) difficulty = "easy";
+  if(state.streak >= 3) difficulty = "hard";
+
+  let workout = [];
+  if(difficulty === "easy"){
+    workout = ["Pushups x5","Squats x10","Walk 10 min"];
+  }
+  else if(difficulty === "hard"){
+    workout = ["Pushups x15","Squats x25","Plank 45 sec"];
+  }
+  else{
+    workout = ["Pushups x10","Squats x15","Plank 30 sec"];
+  }
+
+  let mealFocus = state.habits.diet
+    ? "Maintain clean meals"
+    : "STRICT: Avoid junk + reduce snacks";
+
+  let message = "";
+
+  if(!state.habits.diet){
+    message = "Fix diet first. That’s your bottleneck.";
+  }
+  else if(!state.habits.workout){
+    message = "Add movement. Body change needs stimulus.";
+  }
+  else if(state.streak >= 3){
+    message = "Push harder today. You’re building momentum.";
+  }
+  else{
+    message = "Stay consistent. Don’t break the chain.";
+  }
+
+  return { workout, mealFocus, message, difficulty };
+}
+
 // ---------- HEADER ----------
 function header(){
   const xpProgress = updateLevel();
 
   return `
   <div style="padding:16px">
-    <div style="
-      padding:18px;
-      border-radius:20px;
-      background:linear-gradient(135deg,#1e293b,#0f172a)
-    ">
+    <div style="padding:18px;border-radius:20px;background:#1e293b">
       <div style="display:flex;justify-content:space-between">
         <div>Level ${state.level}</div>
         <div style="color:#22c55e">${state.score}</div>
       </div>
 
-      <div style="margin-top:10px;height:8px;background:#1e293b;border-radius:10px">
-        <div style="
-          height:8px;
-          width:${xpProgress}%;
-          background:#22c55e;
-          border-radius:10px
-        "></div>
+      <div style="margin-top:10px;height:8px;background:#0f172a">
+        <div style="height:8px;width:${xpProgress}%;background:#22c55e"></div>
       </div>
 
       <div style="margin-top:8px;font-size:12px">
@@ -81,10 +113,19 @@ function header(){
 
 // ---------- HOME ----------
 function home(){
+
+  const plan = getPlan();
+
   return `
   <div style="padding:16px">
 
     ${calendar()}
+
+    <div style="margin-top:16px;font-size:14px">🔥 Your Plan Today (${plan.difficulty})</div>
+
+    ${card("Meal Focus", plan.mealFocus)}
+    ${card("Workout", plan.workout.join("<br>"))}
+    ${card("Focus", plan.message)}
 
     <div style="margin-top:16px">Today's Execution</div>
 
@@ -94,8 +135,6 @@ function home(){
     ${task("Grooming","grooming",5)}
     ${task("Posture","posture",5)}
 
-    ${ai()}
-
   </div>`;
 }
 
@@ -103,32 +142,10 @@ function home(){
 function task(label,key,xp){
   return `
   <div data-habit="${key}" data-xp="${xp}"
-  style="
-    margin-top:10px;
-    padding:14px;
-    border-radius:14px;
-    background:${state.habits[key]?'#22c55e':'#1e293b'}
-  ">
+  style="margin-top:10px;padding:14px;border-radius:12px;
+  background:${state.habits[key]?'#22c55e':'#1e293b'}">
     ${label} (+${xp} XP)
   </div>`;
-}
-
-// ---------- AI ----------
-function ai(){
-  if(!state.habits.diet)
-    return box("⚡ Fix diet first. Fastest visible change.");
-
-  if(!state.habits.workout)
-    return box("⚡ Add quick workout.");
-
-  if(!state.habits.posture)
-    return box("⚡ Fix posture = instant confidence boost.");
-
-  return box("🔥 Strong day. Keep momentum.");
-}
-
-function box(t){
-  return `<div style="margin-top:14px;padding:14px;background:#334155;border-radius:12px">${t}</div>`;
 }
 
 // ---------- CALENDAR ----------
@@ -141,83 +158,37 @@ function calendar(){
     grid+=`
     <div style="text-align:center">
       <div style="font-size:11px">${d.getDate()}</div>
-      <div style="width:12px;height:12px;background:#1e293b;margin:auto"></div>
+      <div style="width:10px;height:10px;background:#1e293b;margin:auto"></div>
     </div>`;
   }
 
-  return `
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
-    ${grid}
-  </div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">${grid}</div>`;
 }
 
-// ---------- MEALS ----------
+// ---------- PAGES ----------
 function meals(){
-  return `
-  <div style="padding:16px">
-    ${card("Breakfast","Sattu + Roti")}
-    ${card("Lunch","Roti + Sabzi")}
-    ${card("Dinner","Dal + Light Roti")}
-  </div>`;
+  return `<div style="padding:16px">Meal planning based on your goal</div>`;
 }
 
-// ---------- FITNESS ----------
 function fitness(){
-  return `
-  <div style="padding:16px">
-    ${card("Pushups","3x10")}
-    ${card("Squats","3x15")}
-    ${card("Plank","30 sec")}
-  </div>`;
+  return `<div style="padding:16px">Workout progression here</div>`;
 }
 
-// ---------- GROOMING ----------
 function grooming(){
-  return `
-  <div style="padding:16px">
-    ${card("Beard","Trim weekly")}
-    ${card("Hair","Clean sides + volume top")}
-    ${card("Skin","Face wash + sunscreen")}
-  </div>`;
+  return `<div style="padding:16px">Beard, skin, hair system</div>`;
 }
 
-// ---------- POSTURE ----------
 function mind(){
-  return `
-  <div style="padding:16px">
-    ${card("Posture","Straight spine + chin tuck")}
-    ${card("Confidence","Slow speech + eye contact")}
-  </div>`;
+  return `<div style="padding:16px">Confidence & posture system</div>`;
 }
 
-// ---------- PROGRESS ----------
 function progress(){
   return `
   <div style="padding:16px">
-
     <input type="file" id="photoInput"/>
-
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-      ${state.photos.map(p=>`
-        <img src="${p}" style="width:80px;height:80px;border-radius:10px"/>
-      `).join("")}
+      ${state.photos.map(p=>`<img src="${p}" style="width:80px;height:80px"/>`).join("")}
     </div>
-
-    ${weekly()}
-
-  </div>`;
-}
-
-// ---------- WEEKLY ----------
-function weekly(){
-  const last7 = state.history.slice(-7);
-  if(last7.length===0) return "";
-
-  const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
-
-  return `
-  <div style="margin-top:20px;padding:12px;background:#1e293b;border-radius:12px">
-    📊 Avg: ${avg}
   </div>`;
 }
 
@@ -232,17 +203,7 @@ function card(t,v){
 // ---------- NAV ----------
 function nav(){
   return `
-  <div style="
-    position:fixed;
-    bottom:10px;
-    left:10px;
-    right:10px;
-    display:flex;
-    justify-content:space-around;
-    padding:14px;
-    border-radius:20px;
-    background:#020617
-  ">
+  <div style="position:fixed;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-around;padding:12px;background:#020617;border-radius:20px">
     ${navItem("home","🏠")}
     ${navItem("meals","🍽")}
     ${navItem("fitness","🏋️")}
@@ -253,11 +214,7 @@ function nav(){
 }
 
 function navItem(p,i){
-  return `
-  <div data-page="${p}"
-  style="color:${state.page===p?'#22c55e':'#64748b'}">
-    ${i}
-  </div>`;
+  return `<div data-page="${p}" style="color:${state.page===p?'#22c55e':'#64748b'}">${i}</div>`;
 }
 
 // ---------- ROUTER ----------
@@ -296,25 +253,19 @@ function bind(){
   const input=document.getElementById("photoInput");
   if(input){
     input.onchange=e=>{
-      const file=e.target.files[0];
       const reader=new FileReader();
       reader.onload=()=>{
         state.photos.push(reader.result);
         save(); render();
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(e.target.files[0]);
     };
   }
 }
 
 // ---------- INIT ----------
 function render(){
-  app.innerHTML = `
-  <div style="min-height:100vh;background:#020617;color:white">
-    ${header()}
-    ${screen()}
-    ${nav()}
-  </div>`;
+  app.innerHTML = `<div style="min-height:100vh;background:#020617;color:white">${header()}${screen()}${nav()}</div>`;
   bind();
 }
 
