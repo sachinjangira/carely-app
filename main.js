@@ -1,14 +1,12 @@
 const app = document.getElementById("app");
 
 // ---------- CONFIG ----------
-const STORAGE_KEY = "carely_prod_v1";
-const VERSION = 1;
+const STORAGE_KEY = "carely_prod_final";
 const today = new Date().toISOString().slice(0,10);
 
-// ---------- STATE ----------
+// ---------- INITIAL STATE ----------
 function getInitialState(){
   return {
-    version: VERSION,
     date: today,
     page: "home",
     score: 0,
@@ -31,11 +29,10 @@ function getInitialState(){
   };
 }
 
+// ---------- LOAD ----------
 function loadState(){
   try{
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if(!saved || saved.version !== VERSION) return getInitialState();
-    return saved;
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || getInitialState();
   }catch{
     return getInitialState();
   }
@@ -47,30 +44,44 @@ function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// ---------- RESET ----------
+// ---------- HABITS ----------
+const habits = {
+  workout:{label:"Workout",points:20,weight:2},
+  steps:{label:"Steps",points:10,weight:1},
+  diet:{label:"Diet",points:25,weight:3},
+  grooming:{label:"Grooming",points:10,weight:1},
+  posture:{label:"Posture",points:10,weight:1}
+};
+
+// ---------- DAILY RESET ----------
 if(state.date !== today){
-  const done = Object.values(state.habits).filter(Boolean).length;
-  const percent = Math.round((done/5)*100);
+
+  let totalWeight = 0;
+  let achievedWeight = 0;
+
+  Object.keys(habits).forEach(k=>{
+    totalWeight += habits[k].weight;
+    if(state.habits[k]) achievedWeight += habits[k].weight;
+  });
+
+  const percent = Math.round((achievedWeight / totalWeight) * 100);
 
   state.history.push({date:state.date,score:percent});
   if(state.history.length>90) state.history.shift();
 
-  state.streak = percent >= 70 ? state.streak + 1 : 0;
+  if(percent >= 70) state.streak++;
+  else state.streak = 0;
+
+  if(!state.habits.diet){
+    state.score -= 15;
+  }
 
   state.date = today;
-  state.score = 0;
+  state.score = Math.max(0,state.score);
   Object.keys(state.habits).forEach(k=>state.habits[k]=false);
+
   save();
 }
-
-// ---------- HABITS ----------
-const habits = {
-  workout:{label:"Workout",points:20},
-  steps:{label:"Steps",points:10},
-  diet:{label:"Diet",points:25},
-  grooming:{label:"Grooming",points:10},
-  posture:{label:"Posture",points:10}
-};
 
 // ---------- RENDER ----------
 function render(){
@@ -131,6 +142,29 @@ function home(){
       </div>
     `).join("")}
 
+    ${feedback()}
+    ${photos()}
+
+  </div>`;
+}
+
+// ---------- FEEDBACK ----------
+function feedback(){
+  let msg = "Good start.";
+
+  if(!state.habits.diet){
+    msg = "Diet is breaking your progress.";
+  }
+  else if(!state.habits.workout){
+    msg = "Workout missing today.";
+  }
+  else if(state.score > 70){
+    msg = "Strong day. Keep consistency.";
+  }
+
+  return `
+  <div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.08)">
+    ${msg}
   </div>`;
 }
 
@@ -149,10 +183,9 @@ function weeklyStats(){
 
 // ---------- HEATMAP ----------
 function heatmap(){
-  const days = 30;
   let grid = "";
 
-  for(let i=days-1;i>=0;i--){
+  for(let i=29;i>=0;i--){
     const d = new Date();
     d.setDate(d.getDate()-i);
     const key = d.toISOString().slice(0,10);
@@ -171,6 +204,17 @@ function heatmap(){
   return `
   <div style="display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-top:12px">
     ${grid}
+  </div>`;
+}
+
+// ---------- PHOTOS ----------
+function photos(){
+  return `
+  <div style="margin-top:12px">
+    <input type="file" id="photoInput"/>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      ${state.photos.map(p=>`<img src="${p}" style="height:60px"/>`).join("")}
+    </div>
   </div>`;
 }
 
@@ -283,8 +327,12 @@ function bindEvents(){
       const k = t.dataset.habit;
       const h = habits[k];
 
+      const multiplier = 1 + (state.streak * 0.05);
+      const value = Math.round(h.points * multiplier);
+
       state.habits[k] = !state.habits[k];
-      state.score += state.habits[k]?h.points:-h.points;
+      state.score += state.habits[k] ? value : -value;
+
       state.score = Math.max(0,Math.min(100,state.score));
 
       save(); render();
@@ -297,6 +345,21 @@ function bindEvents(){
       save();
     };
   });
+
+  const photo = document.getElementById("photoInput");
+  if(photo){
+    photo.onchange = ()=>{
+      const file = photo.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e=>{
+        state.photos.push(e.target.result);
+        save(); render();
+      };
+      reader.readAsDataURL(file);
+    };
+  }
 }
 
 // ---------- INIT ----------
