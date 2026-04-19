@@ -1,3 +1,8 @@
-self.addEventListener("install", () => {
-  console.log("Service Worker Installed");
+self.addEventListener("push", function(event) {
+  const data = event.data ? event.data.text() : "Reminder";
+
+  self.registration.showNotification("Carely", {
+    body: data,
+    icon: "icon.png"
+  });
 });
