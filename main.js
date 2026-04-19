@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_v8_smart";
+const STORAGE = "carely_v9_pro";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -16,67 +16,28 @@ let state = JSON.parse(localStorage.getItem(STORAGE)) || {
     diet:false,
     grooming:false,
     posture:false
-  }
+  },
+  history: [],
+  photos: []
 };
 
 function save(){
   localStorage.setItem(STORAGE, JSON.stringify(state));
 }
 
-// ---------- GOALS ----------
-const GOALS = {
-  fat_loss:{name:"Fat Loss"},
-  confidence:{name:"Confidence"},
-  grooming:{name:"Grooming"}
-};
-
 // ---------- RESET ----------
 if(state.date !== today){
+
+  state.history.push({date:state.date,score:state.score});
+  if(state.history.length>30) state.history.shift();
+
+  state.streak = state.score >= 60 ? state.streak+1 : 0;
+
   state.date = today;
   state.score = 0;
   Object.keys(state.habits).forEach(k=>state.habits[k]=false);
+
   save();
-}
-
-// ---------- SMART MEALS ----------
-function mealPlan(){
-  const meals = {
-    Breakfast: ["Sattu drink + 2 roti", "Paneer + roti", "Oats + milk"],
-    Lunch: ["4 roti + sabzi", "Rice + dal + salad", "Paneer sabzi + roti"],
-    Dinner: ["Light roti + sabzi", "Dal + salad", "Paneer + veggies"]
-  };
-
-  return `
-  <div style="margin-top:12px">
-    <div style="opacity:0.7">Suggested Meals</div>
-    ${Object.keys(meals).map(m=>`
-      <div style="margin-top:8px;padding:10px;border-radius:10px;background:#1e293b">
-        <b>${m}</b><br>
-        ${meals[m][Math.floor(Math.random()*meals[m].length)]}
-      </div>
-    `).join("")}
-  </div>`;
-}
-
-// ---------- SMART WORKOUT ----------
-function workoutPlan(){
-  const plans = [
-    ["Push-ups 10x3","Squats 15x3","Plank 30s x3"],
-    ["Incline push-ups","Lunges","Plank"],
-    ["Knee push-ups","Wall sit","Core hold"]
-  ];
-
-  const plan = plans[new Date().getDate() % plans.length];
-
-  return `
-  <div style="margin-top:12px">
-    <div style="opacity:0.7">Today's Workout</div>
-    ${plan.map(x=>`
-      <div style="margin-top:6px;padding:10px;border-radius:10px;background:#1e293b">
-        ${x}
-      </div>
-    `).join("")}
-  </div>`;
 }
 
 // ---------- HEADER ----------
@@ -85,9 +46,10 @@ function header(){
   <div style="padding:16px">
     <div style="padding:16px;border-radius:16px;background:#1e293b">
       <div style="display:flex;justify-content:space-between">
-        <div>${GOALS[state.goal].name}</div>
+        <div>Fat Loss</div>
         <div style="color:#22c55e">${state.score}</div>
       </div>
+      <div style="margin-top:6px;font-size:12px">🔥 ${state.streak} day streak</div>
     </div>
   </div>`;
 }
@@ -97,10 +59,7 @@ function home(){
   return `
   <div style="padding:16px">
 
-    ${goalSelector()}
-    ${calendar()}
-    
-    <div style="margin-top:12px">Today's Tasks</div>
+    <div>Today's Tasks</div>
 
     ${task("Workout","workout")}
     ${task("Steps","steps")}
@@ -108,27 +67,8 @@ function home(){
     ${task("Grooming","grooming")}
     ${task("Posture","posture")}
 
-    ${smartSuggestions()}
+    ${smart()}
 
-  </div>`;
-}
-
-// ---------- SMART FEEDBACK ----------
-function smartSuggestions(){
-  if(!state.habits.diet){
-    return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
-      ⚡ Fix diet today → biggest impact
-    </div>` + mealPlan();
-  }
-
-  if(!state.habits.workout){
-    return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
-      ⚡ Do a quick workout now
-    </div>` + workoutPlan();
-  }
-
-  return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
-    ✅ Good consistency
   </div>`;
 }
 
@@ -142,37 +82,68 @@ function task(label,key){
   </div>`;
 }
 
-// ---------- CALENDAR ----------
-function calendar(){
-  let grid="";
-  for(let i=6;i>=0;i--){
-    const d=new Date();
-    d.setDate(d.getDate()-i);
-
-    grid+=`
-    <div style="text-align:center">
-      <div style="font-size:11px">${d.getDate()}</div>
-      <div style="width:12px;height:12px;background:#1e293b;margin:auto"></div>
+// ---------- SMART ----------
+function smart(){
+  if(!state.habits.diet){
+    return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
+      ⚡ Fix diet today
     </div>`;
   }
-
-  return `
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px">
-    ${grid}
+  if(!state.habits.workout){
+    return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
+      ⚡ Do quick workout
+    </div>`;
+  }
+  return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">
+    ✅ Good job
   </div>`;
 }
 
-// ---------- GOALS ----------
-function goalSelector(){
+// ---------- MEALS ----------
+function meals(){
+  return `<div style="padding:16px">Meal suggestions coming</div>`;
+}
+
+// ---------- FITNESS ----------
+function fitness(){
+  return `<div style="padding:16px">Workout plan coming</div>`;
+}
+
+// ---------- PROGRESS (NEW) ----------
+function progress(){
+
   return `
-  <div style="display:flex;gap:6px">
-    ${Object.keys(GOALS).map(g=>`
-      <div data-goal="${g}"
-      style="flex:1;text-align:center;padding:8px;border-radius:8px;
-      background:${state.goal===g?'#22c55e':'#1e293b'}">
-        ${GOALS[g].name}
-      </div>
-    `).join("")}
+  <div style="padding:16px">
+
+    <div style="margin-bottom:10px">Upload Progress Photo</div>
+    <input type="file" id="photoInput"/>
+
+    <div style="margin-top:20px">Your Progress</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+      ${state.photos.map(p=>`
+        <img src="${p}" style="width:80px;height:80px;object-fit:cover;border-radius:10px"/>
+      `).join("")}
+    </div>
+
+    ${weeklyReport()}
+
+  </div>`;
+}
+
+// ---------- WEEKLY REPORT ----------
+function weeklyReport(){
+
+  const last7 = state.history.slice(-7);
+  if(last7.length===0) return "";
+
+  const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
+
+  return `
+  <div style="margin-top:20px;padding:12px;background:#1e293b;border-radius:12px">
+    <div>📊 Weekly Report</div>
+    <div style="margin-top:8px">Average Score: ${avg}</div>
+    <div>Streak: ${state.streak} days</div>
+    <div>Consistency: ${avg>=70?"Good":"Needs Work"}</div>
   </div>`;
 }
 
@@ -183,7 +154,7 @@ function nav(){
     ${navItem("home","🏠")}
     ${navItem("meals","🍽")}
     ${navItem("fitness","🏋️")}
-    ${navItem("grooming","🧴")}
+    ${navItem("progress","📈")}
     ${navItem("mind","🧠")}
   </div>`;
 }
@@ -195,25 +166,21 @@ function navItem(p,i){
 // ---------- ROUTER ----------
 function screen(){
   if(state.page==="home") return home();
-  if(state.page==="meals") return mealPlan();
-  if(state.page==="fitness") return workoutPlan();
-  if(state.page==="grooming") return "<div style='padding:16px'>Grooming tips soon</div>";
-  if(state.page==="mind") return "<div style='padding:16px'>Confidence system soon</div>";
+  if(state.page==="meals") return meals();
+  if(state.page==="fitness") return fitness();
+  if(state.page==="progress") return progress();
+  if(state.page==="mind") return "<div style='padding:16px'>Confidence system</div>";
 }
 
 // ---------- EVENTS ----------
 function bind(){
-  app.onclick=e=>{
-    const t=e.target.closest("[data-page],[data-habit],[data-goal]");
+
+  app.onclick = e=>{
+    const t=e.target.closest("[data-page],[data-habit]");
     if(!t) return;
 
     if(t.dataset.page){
       state.page=t.dataset.page;
-      save(); render();
-    }
-
-    if(t.dataset.goal){
-      state.goal=t.dataset.goal;
       save(); render();
     }
 
@@ -226,6 +193,19 @@ function bind(){
       save(); render();
     }
   };
+
+  const input = document.getElementById("photoInput");
+  if(input){
+    input.onchange = e=>{
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        state.photos.push(reader.result);
+        save(); render();
+      };
+      reader.readAsDataURL(file);
+    };
+  }
 }
 
 // ---------- INIT ----------
