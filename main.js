@@ -1,59 +1,53 @@
 const app = document.getElementById("app");
+
+// ---------- SAFE STATE ----------
+const STORAGE = "carely_clean_v1";
+
 const today = new Date().toISOString().slice(0,10);
+
+let state = JSON.parse(localStorage.getItem(STORAGE)) || {
+  date: today,
+  page: "home",
+  goal: "fat_loss",
+  score: 0,
+  streak: 0,
+  habits: {
+    workout:false,
+    steps:false,
+    diet:false,
+    grooming:false,
+    posture:false
+  },
+  meals: {
+    Breakfast:"",
+    Lunch:"",
+    Dinner:"",
+    Snacks:""
+  },
+  history: []
+};
+
+function save(){
+  localStorage.setItem(STORAGE, JSON.stringify(state));
+}
 
 // ---------- GOALS ----------
 const GOALS = {
-  fat_loss: { name: "Fat Loss", weights: { diet:4, workout:3, steps:2, grooming:1, posture:1 }},
-  confidence: { name: "Confidence", weights: { posture:4, workout:2, diet:2, grooming:2, steps:1 }},
-  grooming: { name: "Grooming", weights: { grooming:4, diet:2, posture:2, workout:1, steps:1 }}
+  fat_loss: { name:"Fat Loss", weights:{diet:4,workout:3,steps:2,grooming:1,posture:1}},
+  confidence: { name:"Confidence", weights:{posture:4,workout:2,diet:2,grooming:2,steps:1}},
+  grooming: { name:"Grooming", weights:{grooming:4,diet:2,posture:2,workout:1,steps:1}}
 };
-
-// ---------- STATE ----------
-function getState(){
-  return {
-    date: today,
-    page: "home",
-    goal: "fat_loss",
-    score: 0,
-    streak: 0,
-    habits: { workout:false, steps:false, diet:false, grooming:false, posture:false },
-    meals: { Breakfast:"", Lunch:"", Dinner:"", Snacks:"" },
-    history: []
-  };
-}
-
-let state = JSON.parse(localStorage.getItem("carely_v3")) || getState();
-
-function save(){
-  localStorage.setItem("carely_v3", JSON.stringify(state));
-}
 
 // ---------- RESET ----------
 if(state.date !== today){
-  const w = GOALS[state.goal].weights;
-  let total=0, done=0;
-
-  Object.keys(w).forEach(k=>{
-    total += w[k];
-    if(state.habits[k]) done += w[k];
-  });
-
-  const percent = Math.round((done/total)*100);
-
-  state.history.push({date:state.date,score:percent});
-  if(state.history.length>60) state.history.shift();
-
-  state.streak = percent >= 70 ? state.streak + 1 : 0;
-
   state.date = today;
   state.score = 0;
   Object.keys(state.habits).forEach(k=>state.habits[k]=false);
-
   save();
 }
 
 // ---------- HABITS ----------
-const habits = {
+const points = {
   workout:20,
   steps:10,
   diet:25,
@@ -69,7 +63,7 @@ function render(){
   color:white;font-family:sans-serif">
 
     ${header()}
-    ${router()}
+    ${screen()}
     ${nav()}
 
   </div>`;
@@ -80,18 +74,10 @@ function render(){
 function header(){
   return `
   <div style="padding:16px">
-    <div style="padding:16px;border-radius:16px;background:rgba(255,255,255,0.06)">
+    <div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05)">
       <div style="display:flex;justify-content:space-between">
         <div>${GOALS[state.goal].name}</div>
         <div style="color:#22c55e">${state.score}</div>
-      </div>
-
-      <div style="height:6px;background:#334155;border-radius:6px;margin-top:8px">
-        <div style="height:6px;background:#22c55e;width:${state.score}%"></div>
-      </div>
-
-      <div style="font-size:12px;margin-top:6px">
-        🔥 ${state.streak} day streak
       </div>
     </div>
   </div>`;
@@ -104,8 +90,8 @@ function home(){
 
     ${goalSelector()}
     ${calendar()}
-    
-    <div style="margin-top:16px;font-weight:600">Today's Tasks</div>
+
+    <div style="margin-top:16px">Today's Tasks</div>
 
     ${task("Workout","workout")}
     ${task("Steps","steps")}
@@ -121,16 +107,16 @@ function home(){
 // ---------- TASK ----------
 function task(label,key){
   return `
-  <div class="habit" data-habit="${key}"
-  style="padding:14px;margin-top:8px;border-radius:12px;
+  <div data-habit="${key}"
+  style="padding:14px;margin-top:8px;border-radius:10px;
   background:${state.habits[key]?'#22c55e':'rgba(255,255,255,0.08)'}">
     ${label}
   </div>`;
 }
 
-// ---------- CALENDAR (FIXED GRID) ----------
+// ---------- CALENDAR ----------
 function calendar(){
-  let days = "";
+  let grid = "";
 
   for(let i=27;i>=0;i--){
     const d = new Date();
@@ -141,26 +127,26 @@ function calendar(){
     const score = rec ? rec.score : 0;
 
     const color =
-      score>=70 ? "#22c55e" :
-      score>=40 ? "#facc15" :
+      score>70 ? "#22c55e" :
+      score>30 ? "#facc15" :
       "#1e293b";
 
-    days += `<div style="aspect-ratio:1;border-radius:4px;background:${color}"></div>`;
+    grid += `<div style="aspect-ratio:1;background:${color};border-radius:4px"></div>`;
   }
 
   return `
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px">
-    ${days}
+    ${grid}
   </div>`;
 }
 
-// ---------- GOALS ----------
+// ---------- GOAL ----------
 function goalSelector(){
   return `
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:6px">
     ${Object.keys(GOALS).map(g=>`
       <div data-goal="${g}"
-      style="flex:1;text-align:center;padding:10px;border-radius:10px;
+      style="flex:1;padding:10px;text-align:center;border-radius:8px;
       background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.08)'}">
       ${GOALS[g].name}
       </div>
@@ -170,29 +156,29 @@ function goalSelector(){
 
 // ---------- FEEDBACK ----------
 function feedback(){
-  if(!state.habits.diet) return box("Diet is your biggest lever.");
-  if(!state.habits.workout) return box("Workout missing.");
-  return box("Good consistency.");
+  if(!state.habits.diet) return box("Fix your diet first.");
+  if(!state.habits.workout) return box("Add workout.");
+  return box("Good progress.");
 }
 
 function box(t){
-  return `<div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.08)">${t}</div>`;
+  return `<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08)">${t}</div>`;
 }
 
-// ---------- PAGES ----------
+// ---------- OTHER PAGES ----------
 function meals(){
   return `
   <div style="padding:16px">
     ${["Breakfast","Lunch","Dinner","Snacks"].map(m=>`
       <input data-meal="${m}" value="${state.meals[m]}"
       placeholder="${m}"
-      style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px"/>
+      style="width:100%;padding:10px;margin-bottom:10px;border-radius:8px">
     `).join("")}
   </div>`;
 }
 
 function fitness(){
-  return `<div style="padding:16px">${task("Push-ups","workout")}${task("Squats","steps")}</div>`;
+  return `<div style="padding:16px">${task("Push-ups","workout")}</div>`;
 }
 
 function grooming(){
@@ -204,14 +190,12 @@ function mind(){
 }
 
 // ---------- ROUTER ----------
-function router(){
-  switch(state.page){
-    case "home": return home();
-    case "meals": return meals();
-    case "fitness": return fitness();
-    case "grooming": return grooming();
-    case "mind": return mind();
-  }
+function screen(){
+  if(state.page==="home") return home();
+  if(state.page==="meals") return meals();
+  if(state.page==="fitness") return fitness();
+  if(state.page==="grooming") return grooming();
+  if(state.page==="mind") return mind();
 }
 
 // ---------- NAV ----------
@@ -256,21 +240,21 @@ function bind(){
       const weight = GOALS[state.goal].weights[k] || 1;
 
       state.habits[k] = !state.habits[k];
-      state.score += state.habits[k] ? habits[k]*weight : -habits[k]*weight;
+      state.score += state.habits[k] ? points[k]*weight : -points[k]*weight;
 
-      state.score = Math.max(0,Math.min(100,state.score));
+      state.score = Math.max(0, Math.min(100, state.score));
 
       save(); render();
     }
   };
 
-  document.querySelectorAll("[data-meal]").forEach(input=>{
-    input.oninput = e=>{
+  document.querySelectorAll("[data-meal]").forEach(i=>{
+    i.oninput = e=>{
       state.meals[e.target.dataset.meal] = e.target.value;
       save();
     };
   });
 }
 
-// ---------- INIT ----------
+// ---------- START ----------
 render();
