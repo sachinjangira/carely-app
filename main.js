@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_elite_v1";
+const STORAGE = "carely_elite_v2";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -28,15 +28,11 @@ function save(){
 
 // ---------- RESET ----------
 if(state.date !== today){
-
   state.history.push({date:state.date,score:state.score});
   if(state.history.length>30) state.history.shift();
 
-  if(state.score >= 60){
-    state.streak++;
-  } else {
-    state.streak = 0;
-  }
+  if(state.score >= 60) state.streak++;
+  else state.streak = 0;
 
   state.date = today;
   state.score = 0;
@@ -57,16 +53,13 @@ function header(){
 
   return `
   <div style="padding:16px">
-
     <div style="
       padding:18px;
       border-radius:20px;
-      background:linear-gradient(135deg,#1e293b,#0f172a);
-      box-shadow:0 10px 30px rgba(0,0,0,0.4)
+      background:linear-gradient(135deg,#1e293b,#0f172a)
     ">
-
       <div style="display:flex;justify-content:space-between">
-        <div style="font-size:16px">Level ${state.level}</div>
+        <div>Level ${state.level}</div>
         <div style="color:#22c55e">${state.score}</div>
       </div>
 
@@ -74,15 +67,14 @@ function header(){
         <div style="
           height:8px;
           width:${xpProgress}%;
-          background:linear-gradient(90deg,#22c55e,#4ade80);
+          background:#22c55e;
           border-radius:10px
         "></div>
       </div>
 
-      <div style="margin-top:8px;font-size:12px;color:#94a3b8">
-        🔥 ${state.streak} day streak • ⚡ ${state.xp} XP
+      <div style="margin-top:8px;font-size:12px">
+        🔥 ${state.streak} • ⚡ ${state.xp} XP
       </div>
-
     </div>
   </div>`;
 }
@@ -94,9 +86,7 @@ function home(){
 
     ${calendar()}
 
-    <div style="margin-top:16px;font-size:14px;color:#94a3b8">
-      Today's Execution
-    </div>
+    <div style="margin-top:16px">Today's Execution</div>
 
     ${task("Workout","workout",15)}
     ${task("Steps","steps",10)}
@@ -104,7 +94,7 @@ function home(){
     ${task("Grooming","grooming",5)}
     ${task("Posture","posture",5)}
 
-    ${aiSuggestions()}
+    ${ai()}
 
   </div>`;
 }
@@ -117,72 +107,46 @@ function task(label,key,xp){
     margin-top:10px;
     padding:14px;
     border-radius:14px;
-    background:${state.habits[key]
-      ?'linear-gradient(135deg,#22c55e,#16a34a)'
-      :'rgba(255,255,255,0.05)'};
-    backdrop-filter:blur(10px)
+    background:${state.habits[key]?'#22c55e':'#1e293b'}
   ">
-    ${label} <span style="opacity:0.6">+${xp} XP</span>
+    ${label} (+${xp} XP)
   </div>`;
 }
 
-// ---------- AI SUGGESTIONS ----------
-function aiSuggestions(){
+// ---------- AI ----------
+function ai(){
+  if(!state.habits.diet)
+    return box("⚡ Fix diet first. Fastest visible change.");
 
-  let msg = "";
+  if(!state.habits.workout)
+    return box("⚡ Add quick workout.");
 
-  if(!state.habits.diet){
-    msg = "Fix diet first. It drives visible change fastest.";
-  }
-  else if(!state.habits.workout){
-    msg = "Add quick workout. Even 5 mins matters.";
-  }
-  else if(state.streak >= 3){
-    msg = "Push harder today. You're building momentum.";
-  }
-  else{
-    msg = "Stay consistent. Small wins compound.";
-  }
+  if(!state.habits.posture)
+    return box("⚡ Fix posture = instant confidence boost.");
 
-  return `
-  <div style="
-    margin-top:14px;
-    padding:14px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.05)
-  ">
-    ⚡ ${msg}
-  </div>`;
+  return box("🔥 Strong day. Keep momentum.");
+}
+
+function box(t){
+  return `<div style="margin-top:14px;padding:14px;background:#334155;border-radius:12px">${t}</div>`;
 }
 
 // ---------- CALENDAR ----------
 function calendar(){
-
-  let grid = "";
-
+  let grid="";
   for(let i=6;i>=0;i--){
-    const d = new Date();
+    const d=new Date();
     d.setDate(d.getDate()-i);
 
-    grid += `
+    grid+=`
     <div style="text-align:center">
-      <div style="font-size:11px;color:#94a3b8">${d.getDate()}</div>
-      <div style="
-        width:14px;
-        height:14px;
-        margin:auto;
-        border-radius:4px;
-        background:#1e293b
-      "></div>
+      <div style="font-size:11px">${d.getDate()}</div>
+      <div style="width:12px;height:12px;background:#1e293b;margin:auto"></div>
     </div>`;
   }
 
   return `
-  <div style="
-    display:grid;
-    grid-template-columns:repeat(7,1fr);
-    gap:6px;
-  ">
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
     ${grid}
   </div>`;
 }
@@ -191,11 +155,9 @@ function calendar(){
 function meals(){
   return `
   <div style="padding:16px">
-    <div style="font-size:14px;color:#94a3b8">Meal Plan</div>
-
-    ${card("Breakfast","Sattu + 2 roti")}
-    ${card("Lunch","Roti + sabzi")}
-    ${card("Dinner","Light roti + dal")}
+    ${card("Breakfast","Sattu + Roti")}
+    ${card("Lunch","Roti + Sabzi")}
+    ${card("Dinner","Dal + Light Roti")}
   </div>`;
 }
 
@@ -203,11 +165,28 @@ function meals(){
 function fitness(){
   return `
   <div style="padding:16px">
-    <div style="font-size:14px;color:#94a3b8">Workout Plan</div>
-
-    ${card("Pushups","3 x 10")}
-    ${card("Squats","3 x 15")}
+    ${card("Pushups","3x10")}
+    ${card("Squats","3x15")}
     ${card("Plank","30 sec")}
+  </div>`;
+}
+
+// ---------- GROOMING ----------
+function grooming(){
+  return `
+  <div style="padding:16px">
+    ${card("Beard","Trim weekly")}
+    ${card("Hair","Clean sides + volume top")}
+    ${card("Skin","Face wash + sunscreen")}
+  </div>`;
+}
+
+// ---------- POSTURE ----------
+function mind(){
+  return `
+  <div style="padding:16px">
+    ${card("Posture","Straight spine + chin tuck")}
+    ${card("Confidence","Slow speech + eye contact")}
   </div>`;
 }
 
@@ -224,39 +203,29 @@ function progress(){
       `).join("")}
     </div>
 
-    ${weeklyReport()}
+    ${weekly()}
 
   </div>`;
 }
 
 // ---------- WEEKLY ----------
-function weeklyReport(){
+function weekly(){
   const last7 = state.history.slice(-7);
   if(last7.length===0) return "";
 
   const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
 
   return `
-  <div style="
-    margin-top:20px;
-    padding:14px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.05)
-  ">
-    📊 Weekly Avg: ${avg}
+  <div style="margin-top:20px;padding:12px;background:#1e293b;border-radius:12px">
+    📊 Avg: ${avg}
   </div>`;
 }
 
 // ---------- CARD ----------
-function card(title,val){
+function card(t,v){
   return `
-  <div style="
-    margin-top:10px;
-    padding:14px;
-    border-radius:14px;
-    background:rgba(255,255,255,0.05)
-  ">
-    <b>${title}</b><br>${val}
+  <div style="margin-top:10px;padding:14px;border-radius:12px;background:#1e293b">
+    <b>${t}</b><br>${v}
   </div>`;
 }
 
@@ -272,11 +241,13 @@ function nav(){
     justify-content:space-around;
     padding:14px;
     border-radius:20px;
-    background:rgba(15,23,42,0.9)
+    background:#020617
   ">
     ${navItem("home","🏠")}
     ${navItem("meals","🍽")}
     ${navItem("fitness","🏋️")}
+    ${navItem("grooming","🧴")}
+    ${navItem("mind","🧠")}
     ${navItem("progress","📈")}
   </div>`;
 }
@@ -284,10 +255,7 @@ function nav(){
 function navItem(p,i){
   return `
   <div data-page="${p}"
-  style="
-    color:${state.page===p?'#22c55e':'#64748b'};
-    font-size:18px
-  ">
+  style="color:${state.page===p?'#22c55e':'#64748b'}">
     ${i}
   </div>`;
 }
@@ -297,12 +265,14 @@ function screen(){
   if(state.page==="home") return home();
   if(state.page==="meals") return meals();
   if(state.page==="fitness") return fitness();
+  if(state.page==="grooming") return grooming();
+  if(state.page==="mind") return mind();
   if(state.page==="progress") return progress();
 }
 
 // ---------- EVENTS ----------
 function bind(){
-  app.onclick = e=>{
+  app.onclick=e=>{
     const t=e.target.closest("[data-page],[data-habit]");
     if(!t) return;
 
@@ -340,12 +310,7 @@ function bind(){
 // ---------- INIT ----------
 function render(){
   app.innerHTML = `
-  <div style="
-    min-height:100vh;
-    background:radial-gradient(circle at top,#0f172a,#020617);
-    color:white;
-    font-family:system-ui
-  ">
+  <div style="min-height:100vh;background:#020617;color:white">
     ${header()}
     ${screen()}
     ${nav()}
