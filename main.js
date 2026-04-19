@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_v4_clean";
+const STORAGE = "carely_final_v5";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -57,14 +57,22 @@ const points = {
 // ---------- RENDER ----------
 function render(){
   app.innerHTML = `
-  <div style="min-height:100vh;padding-bottom:90px;
-  background:linear-gradient(180deg,#020617,#0f172a);
-  color:white;font-family:system-ui">
+  <div style="
+    min-height:100vh;
+    padding-bottom:100px;
+    background:radial-gradient(circle at top,#0f172a,#020617);
+    color:white;
+    font-family:system-ui">
 
     ${header()}
-    ${screen()}
-    ${nav()}
+    
+    <div style="padding:16px">
+      ${goalSelector()}
+      ${calendarCard()}
+      ${screen()}
+    </div>
 
+    ${nav()}
   </div>`;
   bind();
 }
@@ -72,23 +80,29 @@ function render(){
 // ---------- HEADER ----------
 function header(){
   return `
-  <div style="padding:16px 16px 0 16px">
-    <div style="padding:16px;border-radius:16px;
-    background:rgba(255,255,255,0.06)">
+  <div style="padding:16px">
+    <div style="
+      padding:18px;
+      border-radius:20px;
+      background:linear-gradient(135deg,#1e293b,#0f172a);
+      box-shadow:0 10px 30px rgba(0,0,0,0.4)">
 
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:14px;opacity:0.8">${GOALS[state.goal].name}</div>
+      <div style="display:flex;justify-content:space-between">
+        <div style="opacity:0.8">${GOALS[state.goal].name}</div>
         <div style="color:#22c55e;font-weight:600">${state.score}</div>
       </div>
 
-      <div style="height:6px;background:#334155;border-radius:6px;margin-top:8px">
-        <div style="height:6px;background:#22c55e;width:${state.score}%"></div>
+      <div style="height:8px;background:#1e293b;border-radius:8px;margin-top:10px">
+        <div style="
+          height:8px;
+          background:linear-gradient(90deg,#22c55e,#4ade80);
+          width:${state.score}%">
+        </div>
       </div>
 
-      <div style="font-size:12px;margin-top:6px;opacity:0.7">
+      <div style="margin-top:8px;font-size:12px;opacity:0.7">
         🔥 ${state.streak} day streak
       </div>
-
     </div>
   </div>`;
 }
@@ -96,12 +110,9 @@ function header(){
 // ---------- HOME ----------
 function home(){
   return `
-  <div style="padding:16px">
+  <div>
 
-    ${goalSelector()}
-    ${calendar()}
-
-    <div style="margin-top:16px;font-size:14px;opacity:0.8">Today's Tasks</div>
+    <div style="margin-top:12px;font-size:14px;opacity:0.8">Today's Tasks</div>
 
     ${task("Workout","workout")}
     ${task("Steps","steps")}
@@ -118,46 +129,50 @@ function home(){
 function task(label,key){
   return `
   <div data-habit="${key}"
-  style="padding:14px;margin-top:8px;border-radius:12px;
-  background:${state.habits[key]?'#22c55e':'rgba(255,255,255,0.06)'};
-  transition:0.2s">
+  style="
+    padding:14px;
+    margin-top:8px;
+    border-radius:14px;
+    background:${state.habits[key]?'linear-gradient(135deg,#22c55e,#16a34a)':'rgba(255,255,255,0.05)'};
+    box-shadow:${state.habits[key]?'0 4px 15px rgba(34,197,94,0.3)':'none'};">
     ${label}
   </div>`;
 }
 
 // ---------- CALENDAR ----------
 function calendar(){
-  let grid = "";
-
+  let grid="";
   for(let i=27;i>=0;i--){
-    const d = new Date();
+    const d=new Date();
     d.setDate(d.getDate()-i);
-    const key = d.toISOString().slice(0,10);
+    const key=d.toISOString().slice(0,10);
 
-    const rec = state.history.find(x=>x.date===key);
-    const score = rec ? rec.score : 0;
+    const rec=state.history.find(x=>x.date===key);
+    const s=rec?rec.score:0;
 
-    const color =
-      score>=70 ? "#22c55e" :
-      score>=40 ? "#facc15" :
-      "#1e293b";
+    const c=s>=70?"#22c55e":s>=40?"#facc15":"#1e293b";
 
-    grid += `<div style="
-      width:12px;
-      height:12px;
-      border-radius:3px;
-      background:${color}">
-    </div>`;
+    grid+=`<div style="width:12px;height:12px;border-radius:3px;background:${c}"></div>`;
   }
 
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px">${grid}</div>`;
+}
+
+// ---------- CALENDAR CARD ----------
+function calendarCard(){
   return `
   <div style="
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
     margin-top:12px;
-    max-width:220px">
-    ${grid}
+    padding:14px;
+    border-radius:16px;
+    background:rgba(255,255,255,0.05)">
+    
+    <div style="font-size:13px;opacity:0.7;margin-bottom:8px">
+      Consistency
+    </div>
+
+    ${calendar()}
+    
   </div>`;
 }
 
@@ -167,10 +182,14 @@ function goalSelector(){
   <div style="display:flex;gap:8px;margin-bottom:12px">
     ${Object.keys(GOALS).map(g=>`
       <div data-goal="${g}"
-      style="flex:1;text-align:center;padding:10px;border-radius:10px;
-      background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'};
-      font-size:13px">
-      ${GOALS[g].name}
+      style="
+        flex:1;
+        text-align:center;
+        padding:10px;
+        border-radius:10px;
+        background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'};
+        font-size:13px">
+        ${GOALS[g].name}
       </div>
     `).join("")}
   </div>`;
@@ -194,26 +213,26 @@ function box(text){
 // ---------- PAGES ----------
 function meals(){
   return `
-  <div style="padding:16px">
+  <div>
     ${["Breakfast","Lunch","Dinner","Snacks"].map(m=>`
       <input data-meal="${m}" value="${state.meals[m]}"
       placeholder="${m}"
-      style="width:100%;padding:12px;margin-bottom:10px;
+      style="width:100%;padding:12px;margin-top:10px;
       border-radius:10px;border:none;background:#1e293b;color:white">
     `).join("")}
   </div>`;
 }
 
 function fitness(){
-  return `<div style="padding:16px">${task("Push-ups","workout")}${task("Squats","steps")}</div>`;
+  return `<div>${task("Push-ups","workout")}${task("Squats","steps")}</div>`;
 }
 
 function grooming(){
-  return `<div style="padding:16px">${task("Face Wash","grooming")}</div>`;
+  return `<div>${task("Face Wash","grooming")}</div>`;
 }
 
 function mind(){
-  return `<div style="padding:16px">${task("Posture","posture")}</div>`;
+  return `<div>${task("Posture","posture")}</div>`;
 }
 
 // ---------- ROUTER ----------
@@ -228,56 +247,69 @@ function screen(){
 // ---------- NAV ----------
 function nav(){
   return `
-  <div style="position:fixed;bottom:0;width:100%;
-  display:flex;justify-content:space-around;
-  background:#020617;padding:12px;border-top:1px solid #1e293b">
-
+  <div style="
+    position:fixed;
+    bottom:10px;
+    left:10px;
+    right:10px;
+    display:flex;
+    justify-content:space-around;
+    padding:12px;
+    border-radius:20px;
+    background:rgba(15,23,42,0.9)">
+    
     ${navItem("home","🏠")}
     ${navItem("meals","🍽")}
     ${navItem("fitness","🏋️")}
     ${navItem("grooming","🧴")}
     ${navItem("mind","🧠")}
-
   </div>`;
 }
 
 function navItem(p,i){
-  return `<div data-page="${p}" style="font-size:18px;
-  color:${state.page===p?'#22c55e':'#64748b'}">${i}</div>`;
+  return `
+  <div data-page="${p}"
+  style="
+    padding:8px 12px;
+    border-radius:12px;
+    background:${state.page===p?'#22c55e':'transparent'};
+    color:${state.page===p?'#000':'#94a3b8'};">
+    ${i}
+  </div>`;
 }
 
 // ---------- EVENTS ----------
 function bind(){
   app.onclick = e=>{
-    const t = e.target.closest("[data-page],[data-habit],[data-goal]");
+    const t=e.target.closest("[data-page],[data-habit],[data-goal]");
     if(!t) return;
 
     if(t.dataset.page){
-      state.page = t.dataset.page;
+      state.page=t.dataset.page;
       save(); render();
     }
 
     if(t.dataset.goal){
-      state.goal = t.dataset.goal;
+      state.goal=t.dataset.goal;
       save(); render();
     }
 
     if(t.dataset.habit){
-      const k = t.dataset.habit;
-      const weight = GOALS[state.goal].weights[k] || 1;
+      const k=t.dataset.habit;
+      const weight=GOALS[state.goal].weights[k]||1;
 
-      state.habits[k] = !state.habits[k];
+      state.habits[k]=!state.habits[k];
       state.score += state.habits[k] ? points[k]*weight : -points[k]*weight;
 
-      state.score = Math.max(0,Math.min(100,state.score));
+      state.score=Math.max(0,Math.min(100,state.score));
 
       save(); render();
     }
   };
 
   document.querySelectorAll("[data-meal]").forEach(i=>{
-    i.oninput = e=>{
-      state.meals[e.target.dataset.meal] = e.target.value;
+    i.oninput=e=>{
+      state.meals[e.target.dataset.meal]=e.target.value;
       save();
     };
   });
