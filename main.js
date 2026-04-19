@@ -30,7 +30,7 @@ function save() {
   localStorage.setItem("carely", JSON.stringify(state));
 }
 
-// RESET DAILY
+// RESET
 if (state.date !== today) {
   const completed = Object.values(state.habits).filter(v => v).length;
   const percent = Math.round((completed / 6) * 100);
@@ -70,27 +70,18 @@ const foodDB = {
   burger: { p: 12, c: 30, f: 12, type: "junk" }
 };
 
-// RECIPES
+// DATA
+const exercises = [
+  { name: "Incline Push-up", reps: "3 x 12", video: "https://www.w3schools.com/html/mov_bbb.mp4" },
+  { name: "Squats", reps: "3 x 15", video: "https://www.w3schools.com/html/movie.mp4" }
+];
+
 const recipes = [
   {
     name: "Paneer Bhurji",
     time: "10 min",
     steps: ["Heat pan", "Add onion", "Add paneer", "Cook 5 mins"],
     video: "https://www.w3schools.com/html/mov_bbb.mp4"
-  }
-];
-
-// EXERCISES
-const exercises = [
-  {
-    name: "Incline Push-up",
-    reps: "3 x 12",
-    video: "https://www.w3schools.com/html/mov_bbb.mp4"
-  },
-  {
-    name: "Squats",
-    reps: "3 x 15",
-    video: "https://www.w3schools.com/html/movie.mp4"
   }
 ];
 
@@ -101,7 +92,7 @@ function switchPage(page) {
   render();
 }
 
-// HABIT TOGGLE
+// TOGGLE
 function toggleHabit(habit) {
   const config = habitConfig[habit];
 
@@ -119,7 +110,7 @@ function toggleHabit(habit) {
   render();
 }
 
-// FOOD FUNCTIONS
+// FOOD
 function showSuggestions(value) {
   const el = document.getElementById("suggestions");
   if (!el) return;
@@ -129,7 +120,7 @@ function showSuggestions(value) {
     .slice(0, 5);
 
   el.innerHTML = list.map(f =>
-    `<div onclick="selectFood('${f}')" class="bg-gray-800 p-2 mb-1 rounded">${f}</div>`
+    `<div onclick="selectFood('${f}')" class="p-2 bg-gray-800 rounded mb-1">${f}</div>`
   ).join("");
 }
 
@@ -144,12 +135,12 @@ function addFood() {
 
   if (!foodDB[name]) return;
 
-  const d = foodDB[name];
-  const factor = qty / 100;
-
-  if (d.type === "junk") {
+  if (foodDB[name].type === "junk") {
     state.score -= 10;
   }
+
+  const d = foodDB[name];
+  const factor = qty / 100;
 
   state.foods.push({
     name,
@@ -182,28 +173,46 @@ function totals() {
 function render() {
   let content = "";
 
-  // HOME
+  // HOME UI
   if (state.page === "home") {
+    const progress = Math.min(state.score, 100);
+
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl mb-4 text-center">
-        <div class="text-xl text-green-400">${state.score} Score</div>
-        <div class="text-sm text-gray-400">🔥 ${state.streak} day streak</div>
+      <div class="mb-4">
+        <div class="bg-white/10 p-4 rounded-2xl">
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-lg font-bold">Level Progress</div>
+            <div class="text-green-400">${state.score}/100</div>
+          </div>
+
+          <div class="w-full bg-gray-700 h-3 rounded-full">
+            <div class="bg-green-500 h-3 rounded-full" style="width:${progress}%"></div>
+          </div>
+
+          <div class="text-sm text-gray-400 mt-2">🔥 ${state.streak} day streak</div>
+        </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
+      <div class="text-sm text-gray-400 mb-2">Today's Missions</div>
+
+      <div class="space-y-2">
         ${Object.keys(state.habits).map(h=>`
           <div onclick="toggleHabit('${h}')"
-            class="p-4 rounded-2xl text-center ${
-              state.habits[h]?'bg-green-500':'bg-white/10'
+            class="flex justify-between items-center p-3 rounded-xl ${
+              state.habits[h] ? 'bg-green-500/20 border border-green-400' : 'bg-white/10'
             }">
-            ${h}
+
+            <div>${h}</div>
+            <div class="text-sm text-green-400">
+              +${habitConfig[h].points}
+            </div>
           </div>
         `).join("")}
       </div>
     `;
   }
 
-  // FOOD
+  // FOOD UI
   if (state.page === "food") {
     const t = totals();
 
@@ -219,16 +228,16 @@ function render() {
         <input id="qty" placeholder="grams"
           class="text-black p-2 w-full mb-2 rounded"/>
 
-        <button onclick="addFood()" class="bg-blue-500 w-full p-2 rounded mb-3">Add</button>
+        <button onclick="addFood()" class="bg-green-500 w-full p-2 rounded mb-3">Add</button>
 
         ${state.foods.map((f,i)=>`
-          <div class="bg-black/30 p-2 mb-2 rounded flex justify-between">
+          <div class="flex justify-between bg-black/30 p-2 mb-2 rounded">
             ${f.name} ${f.qty}g
             <span onclick="removeFood(${i})">❌</span>
           </div>
         `).join("")}
 
-        <div class="mt-2 font-bold">
+        <div class="mt-3 text-center font-bold">
           Protein: ${t.p}g | Carbs: ${t.c}g | Fat: ${t.f}g
         </div>
       </div>
@@ -238,52 +247,47 @@ function render() {
   // TRAINING
   if (state.page === "training") {
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl">
-        ${exercises.map(e=>`
-          <div class="mb-4">
-            <div class="font-bold">${e.name} (${e.reps})</div>
-            <video controls class="w-full mt-2 rounded">
-              <source src="${e.video}" type="video/mp4">
-            </video>
-          </div>
-        `).join("")}
-      </div>
+      ${exercises.map(e=>`
+        <div class="bg-white/10 p-4 rounded-2xl mb-3">
+          <div class="font-bold">${e.name}</div>
+          <div class="text-sm text-gray-400">${e.reps}</div>
+          <video controls class="w-full mt-2 rounded">
+            <source src="${e.video}">
+          </video>
+        </div>
+      `).join("")}
     `;
   }
 
   // RECIPES
   if (state.page === "recipes") {
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl">
-        ${recipes.map(r=>`
-          <div class="mb-4">
-            <div class="font-bold">${r.name}</div>
-            <div class="text-sm">${r.time}</div>
-            <ul class="text-sm mt-2">
-              ${r.steps.map(s=>`<li>- ${s}</li>`).join("")}
-            </ul>
-            <video controls class="w-full mt-2 rounded">
-              <source src="${r.video}" type="video/mp4">
-            </video>
-          </div>
-        `).join("")}
-      </div>
+      ${recipes.map(r=>`
+        <div class="bg-white/10 p-4 rounded-2xl mb-3">
+          <div class="font-bold">${r.name}</div>
+          <div class="text-sm text-gray-400">${r.time}</div>
+          <ul class="text-sm mt-2">
+            ${r.steps.map(s=>`<li>- ${s}</li>`).join("")}
+          </ul>
+          <video controls class="w-full mt-2 rounded">
+            <source src="${r.video}">
+          </video>
+        </div>
+      `).join("")}
     `;
   }
 
   // CHARACTER
   if (state.page === "character") {
     content = `
-      <div class="bg-white/10 p-4 rounded-2xl">
-        ${Object.entries(state.stats).map(([k,v])=>`
-          <div class="mb-3">
-            <div>${k.toUpperCase()}</div>
-            <div class="bg-gray-700 h-2 rounded">
-              <div class="bg-green-500 h-2 rounded" style="width:${v}%"></div>
-            </div>
+      ${Object.entries(state.stats).map(([k,v])=>`
+        <div class="bg-white/10 p-3 rounded-xl mb-2">
+          <div>${k.toUpperCase()}</div>
+          <div class="bg-gray-700 h-2 mt-1 rounded">
+            <div class="bg-green-500 h-2 rounded" style="width:${v}%"></div>
           </div>
-        `).join("")}
-      </div>
+        </div>
+      `).join("")}
     `;
   }
 
@@ -310,17 +314,17 @@ function render() {
   app.innerHTML = `
     <div class="p-4 pb-28 min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white">
 
-      <h1 class="text-center text-2xl text-green-400 mb-4">Carely</h1>
+      <h1 class="text-center text-xl text-green-400 mb-4">Carely</h1>
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex text-center">
-        <div onclick="switchPage('home')" class="flex-1">🏠</div>
-        <div onclick="switchPage('food')" class="flex-1">🍽</div>
-        <div onclick="switchPage('training')" class="flex-1">🏋️</div>
-        <div onclick="switchPage('recipes')" class="flex-1">🍳</div>
-        <div onclick="switchPage('character')" class="flex-1">🧬</div>
-        <div onclick="switchPage('stats')" class="flex-1">📊</div>
+      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex text-center text-sm">
+        <div onclick="switchPage('home')" class="flex-1 py-2">🏠</div>
+        <div onclick="switchPage('food')" class="flex-1 py-2">🍽</div>
+        <div onclick="switchPage('training')" class="flex-1 py-2">🏋️</div>
+        <div onclick="switchPage('recipes')" class="flex-1 py-2">🍳</div>
+        <div onclick="switchPage('character')" class="flex-1 py-2">🧬</div>
+        <div onclick="switchPage('stats')" class="flex-1 py-2">📊</div>
       </div>
 
     </div>
