@@ -8,15 +8,21 @@ let state = JSON.parse(localStorage.getItem("carely")) || {
   streak: 0,
   history: [],
   page: "home",
-  weight: [],
   foods: [],
+  stats: {
+    body: 0,
+    discipline: 0,
+    grooming: 0,
+    presence: 0,
+    communication: 0
+  },
   habits: {
-    Breakfast: false,
-    Lunch: false,
-    Dinner: false,
-    Protein: false,
     Workout: false,
     Steps: false,
+    NoJunk: false,
+    Grooming: false,
+    Posture: false,
+    Speaking: false
   }
 };
 
@@ -24,7 +30,7 @@ function save() {
   localStorage.setItem("carely", JSON.stringify(state));
 }
 
-// RESET
+// RESET DAILY
 if (state.date !== today) {
   const completed = Object.values(state.habits).filter(v => v).length;
   const percent = Math.round((completed / 6) * 100);
@@ -33,25 +39,60 @@ if (state.date !== today) {
 
   if (state.history.length > 30) state.history.shift();
 
-  state.streak = percent >= 80 ? state.streak + 1 : 0;
+  state.streak = percent >= 70 ? state.streak + 1 : 0;
 
   state.date = today;
+  state.score = 0;
+
   Object.keys(state.habits).forEach(k => state.habits[k] = false);
 }
 
+// CONFIG
+const habitConfig = {
+  Workout: { points: 20, stat: "body" },
+  Steps: { points: 10, stat: "body" },
+  NoJunk: { points: 25, stat: "discipline" },
+  Grooming: { points: 10, stat: "grooming" },
+  Posture: { points: 10, stat: "presence" },
+  Speaking: { points: 10, stat: "communication" }
+};
+
 // FOOD DB
 const foodDB = {
-  paneer: { p: 18, c: 2, f: 20 },
-  milk: { p: 3.5, c: 5, f: 3.5 },
-  curd: { p: 3, c: 4, f: 3 },
-  roti: { p: 3, c: 15, f: 1 },
-  rice: { p: 2.5, c: 28, f: 0.3 },
-  dal: { p: 9, c: 20, f: 1 },
-  soya: { p: 25, c: 10, f: 1 },
-  tofu: { p: 8, c: 2, f: 4 },
-  pizza: { p: 11, c: 33, f: 10 },
-  burger: { p: 12, c: 30, f: 12 }
+  paneer: { p: 18, c: 2, f: 20, type: "protein" },
+  tofu: { p: 8, c: 2, f: 4, type: "protein" },
+  soya: { p: 25, c: 10, f: 1, type: "protein" },
+  roti: { p: 3, c: 15, f: 1, type: "carb" },
+  rice: { p: 2.5, c: 28, f: 0.3, type: "carb" },
+  dal: { p: 9, c: 20, f: 1, type: "balanced" },
+  curd: { p: 3, c: 4, f: 3, type: "balanced" },
+  pizza: { p: 11, c: 33, f: 10, type: "junk" },
+  burger: { p: 12, c: 30, f: 12, type: "junk" }
 };
+
+// RECIPES
+const recipes = [
+  {
+    name: "Paneer Bhurji",
+    time: "10 min",
+    steps: ["Heat pan", "Add onion", "Add paneer", "Cook 5 mins"],
+    video: "https://www.w3schools.com/html/mov_bbb.mp4"
+  }
+];
+
+// EXERCISES
+const exercises = [
+  {
+    name: "Incline Push-up",
+    reps: "3 x 12",
+    video: "https://www.w3schools.com/html/mov_bbb.mp4"
+  },
+  {
+    name: "Squats",
+    reps: "3 x 15",
+    video: "https://www.w3schools.com/html/movie.mp4"
+  }
+];
 
 // NAV
 function switchPage(page) {
@@ -60,15 +101,25 @@ function switchPage(page) {
   render();
 }
 
-// HABITS
+// HABIT TOGGLE
 function toggleHabit(habit) {
+  const config = habitConfig[habit];
+
   state.habits[habit] = !state.habits[habit];
-  state.score += state.habits[habit] ? 5 : -5;
+
+  if (state.habits[habit]) {
+    state.score += config.points;
+    state.stats[config.stat] += 2;
+  } else {
+    state.score -= config.points;
+    state.stats[config.stat] -= 2;
+  }
+
   save();
   render();
 }
 
-// FOOD
+// FOOD FUNCTIONS
 function showSuggestions(value) {
   const el = document.getElementById("suggestions");
   if (!el) return;
@@ -95,6 +146,10 @@ function addFood() {
 
   const d = foodDB[name];
   const factor = qty / 100;
+
+  if (d.type === "junk") {
+    state.score -= 10;
+  }
 
   state.foods.push({
     name,
@@ -130,7 +185,7 @@ function render() {
   // HOME
   if (state.page === "home") {
     content = `
-      <div class="bg-white/10 backdrop-blur p-4 rounded-2xl mb-4 text-center">
+      <div class="bg-white/10 p-4 rounded-2xl mb-4 text-center">
         <div class="text-xl text-green-400">${state.score} Score</div>
         <div class="text-sm text-gray-400">🔥 ${state.streak} day streak</div>
       </div>
@@ -180,6 +235,58 @@ function render() {
     `;
   }
 
+  // TRAINING
+  if (state.page === "training") {
+    content = `
+      <div class="bg-white/10 p-4 rounded-2xl">
+        ${exercises.map(e=>`
+          <div class="mb-4">
+            <div class="font-bold">${e.name} (${e.reps})</div>
+            <video controls class="w-full mt-2 rounded">
+              <source src="${e.video}" type="video/mp4">
+            </video>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  // RECIPES
+  if (state.page === "recipes") {
+    content = `
+      <div class="bg-white/10 p-4 rounded-2xl">
+        ${recipes.map(r=>`
+          <div class="mb-4">
+            <div class="font-bold">${r.name}</div>
+            <div class="text-sm">${r.time}</div>
+            <ul class="text-sm mt-2">
+              ${r.steps.map(s=>`<li>- ${s}</li>`).join("")}
+            </ul>
+            <video controls class="w-full mt-2 rounded">
+              <source src="${r.video}" type="video/mp4">
+            </video>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  // CHARACTER
+  if (state.page === "character") {
+    content = `
+      <div class="bg-white/10 p-4 rounded-2xl">
+        ${Object.entries(state.stats).map(([k,v])=>`
+          <div class="mb-3">
+            <div>${k.toUpperCase()}</div>
+            <div class="bg-gray-700 h-2 rounded">
+              <div class="bg-green-500 h-2 rounded" style="width:${v}%"></div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
   // STATS
   if (state.page === "stats") {
     const data = state.history.slice(-7);
@@ -207,10 +314,13 @@ function render() {
 
       ${content}
 
-      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex">
-        <div onclick="switchPage('home')" style="flex:1;text-align:center">🏠</div>
-        <div onclick="switchPage('food')" style="flex:1;text-align:center">🍽</div>
-        <div onclick="switchPage('stats')" style="flex:1;text-align:center">📊</div>
+      <div class="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-700 flex text-center">
+        <div onclick="switchPage('home')" class="flex-1">🏠</div>
+        <div onclick="switchPage('food')" class="flex-1">🍽</div>
+        <div onclick="switchPage('training')" class="flex-1">🏋️</div>
+        <div onclick="switchPage('recipes')" class="flex-1">🍳</div>
+        <div onclick="switchPage('character')" class="flex-1">🧬</div>
+        <div onclick="switchPage('stats')" class="flex-1">📊</div>
       </div>
 
     </div>
