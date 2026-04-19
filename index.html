@@ -15,6 +15,17 @@
 <body class="bg-black text-white">
   <div id="app"></div>
 
+  <!-- Your app code -->
   <script src="main.js?v=16"></script>
+
+  <!-- ✅ ADD THIS EXACTLY HERE -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js")
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.log("SW Error:", err));
+    }
+  </script>
+
 </body>
 </html>
