@@ -1,6 +1,6 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_final_v5";
+const STORAGE = "carely_v6_final";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
@@ -68,7 +68,7 @@ function render(){
     
     <div style="padding:16px">
       ${goalSelector()}
-      ${calendarCard()}
+      ${state.page === "home" ? calendarCard() : ""}
       ${screen()}
     </div>
 
@@ -84,23 +84,18 @@ function header(){
     <div style="
       padding:18px;
       border-radius:20px;
-      background:linear-gradient(135deg,#1e293b,#0f172a);
-      box-shadow:0 10px 30px rgba(0,0,0,0.4)">
+      background:linear-gradient(135deg,#1e293b,#0f172a)">
 
       <div style="display:flex;justify-content:space-between">
-        <div style="opacity:0.8">${GOALS[state.goal].name}</div>
-        <div style="color:#22c55e;font-weight:600">${state.score}</div>
+        <div>${GOALS[state.goal].name}</div>
+        <div style="color:#22c55e">${state.score}</div>
       </div>
 
       <div style="height:8px;background:#1e293b;border-radius:8px;margin-top:10px">
-        <div style="
-          height:8px;
-          background:linear-gradient(90deg,#22c55e,#4ade80);
-          width:${state.score}%">
-        </div>
+        <div style="height:8px;background:#22c55e;width:${state.score}%"></div>
       </div>
 
-      <div style="margin-top:8px;font-size:12px;opacity:0.7">
+      <div style="margin-top:8px;font-size:12px">
         🔥 ${state.streak} day streak
       </div>
     </div>
@@ -111,7 +106,6 @@ function header(){
 function home(){
   return `
   <div>
-
     <div style="margin-top:12px;font-size:14px;opacity:0.8">Today's Tasks</div>
 
     ${task("Workout","workout")}
@@ -121,7 +115,6 @@ function home(){
     ${task("Posture","posture")}
 
     ${feedback()}
-
   </div>`;
 }
 
@@ -133,33 +126,41 @@ function task(label,key){
     padding:14px;
     margin-top:8px;
     border-radius:14px;
-    background:${state.habits[key]?'linear-gradient(135deg,#22c55e,#16a34a)':'rgba(255,255,255,0.05)'};
-    box-shadow:${state.habits[key]?'0 4px 15px rgba(34,197,94,0.3)':'none'};">
+    background:${state.habits[key]?'#22c55e':'rgba(255,255,255,0.05)'};
+  ">
     ${label}
   </div>`;
 }
 
-// ---------- CALENDAR ----------
-function calendar(){
-  let grid="";
-  for(let i=27;i>=0;i--){
-    const d=new Date();
+// ---------- CALENDAR (WITH DAYS) ----------
+function calendarCard(){
+
+  const days = ["M","T","W","T","F","S","S"];
+  let grid = "";
+
+  for(let i=6;i>=0;i--){
+    const d = new Date();
     d.setDate(d.getDate()-i);
-    const key=d.toISOString().slice(0,10);
+    const label = d.getDate();
 
-    const rec=state.history.find(x=>x.date===key);
-    const s=rec?rec.score:0;
+    const rec = state.history.find(x=>x.date===d.toISOString().slice(0,10));
+    const score = rec ? rec.score : 0;
 
-    const c=s>=70?"#22c55e":s>=40?"#facc15":"#1e293b";
+    const color =
+      score>=70 ? "#22c55e" :
+      score>=40 ? "#facc15" :
+      "#1e293b";
 
-    grid+=`<div style="width:12px;height:12px;border-radius:3px;background:${c}"></div>`;
+    grid += `
+    <div style="text-align:center">
+      <div style="font-size:11px;opacity:0.6">${label}</div>
+      <div style="
+        width:14px;height:14px;margin:auto;
+        border-radius:4px;background:${color}">
+      </div>
+    </div>`;
   }
 
-  return `<div style="display:flex;flex-wrap:wrap;gap:6px">${grid}</div>`;
-}
-
-// ---------- CALENDAR CARD ----------
-function calendarCard(){
   return `
   <div style="
     margin-top:12px;
@@ -168,10 +169,12 @@ function calendarCard(){
     background:rgba(255,255,255,0.05)">
     
     <div style="font-size:13px;opacity:0.7;margin-bottom:8px">
-      Consistency
+      This Week
     </div>
 
-    ${calendar()}
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+      ${grid}
+    </div>
     
   </div>`;
 }
@@ -187,8 +190,7 @@ function goalSelector(){
         text-align:center;
         padding:10px;
         border-radius:10px;
-        background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'};
-        font-size:13px">
+        background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.06)'}">
         ${GOALS[g].name}
       </div>
     `).join("")}
@@ -198,41 +200,29 @@ function goalSelector(){
 // ---------- FEEDBACK ----------
 function feedback(){
   if(!state.habits.diet) return box("Diet drives your transformation.");
-  if(!state.habits.workout) return box("Add workout today.");
+  if(!state.habits.workout) return box("Add workout.");
   return box("Good consistency.");
 }
 
-function box(text){
-  return `
-  <div style="margin-top:12px;padding:12px;border-radius:10px;
-  background:rgba(255,255,255,0.06);font-size:13px">
-    ${text}
-  </div>`;
+function box(t){
+  return `<div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06)">${t}</div>`;
 }
 
 // ---------- PAGES ----------
 function meals(){
-  return `
-  <div>
-    ${["Breakfast","Lunch","Dinner","Snacks"].map(m=>`
-      <input data-meal="${m}" value="${state.meals[m]}"
-      placeholder="${m}"
-      style="width:100%;padding:12px;margin-top:10px;
-      border-radius:10px;border:none;background:#1e293b;color:white">
-    `).join("")}
-  </div>`;
+  return `<div>Meals coming soon</div>`;
 }
 
 function fitness(){
-  return `<div>${task("Push-ups","workout")}${task("Squats","steps")}</div>`;
+  return `<div>Workout plan coming soon</div>`;
 }
 
 function grooming(){
-  return `<div>${task("Face Wash","grooming")}</div>`;
+  return `<div>Grooming tasks</div>`;
 }
 
 function mind(){
-  return `<div>${task("Posture","posture")}</div>`;
+  return `<div>Posture & confidence</div>`;
 }
 
 // ---------- ROUTER ----------
@@ -306,13 +296,6 @@ function bind(){
       save(); render();
     }
   };
-
-  document.querySelectorAll("[data-meal]").forEach(i=>{
-    i.oninput=e=>{
-      state.meals[e.target.dataset.meal]=e.target.value;
-      save();
-    };
-  });
 }
 
 // ---------- INIT ----------
