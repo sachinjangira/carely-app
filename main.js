@@ -1,8 +1,14 @@
 const app = document.getElementById("app");
 
+// ---------- SAFE INIT ----------
+function safeParse(key, fallback){
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+  catch { return fallback; }
+}
+
 const todayKey = new Date().toISOString().slice(0,10);
 
-let state = JSON.parse(localStorage.getItem("carely_v6")) || {
+let state = safeParse("carely_v7", {
   date: todayKey,
   page: "home",
   score: 0,
@@ -10,6 +16,7 @@ let state = JSON.parse(localStorage.getItem("carely_v6")) || {
   shield: 1,
   foods: [],
   history: [],
+  photos: [],
   habits: {
     workout:false,
     steps:false,
@@ -17,16 +24,17 @@ let state = JSON.parse(localStorage.getItem("carely_v6")) || {
     grooming:false,
     posture:false
   }
-};
+});
 
-function save(){ localStorage.setItem("carely_v6", JSON.stringify(state)); }
+function save(){
+  localStorage.setItem("carely_v7", JSON.stringify(state));
+}
 
 // ---------- RESET ----------
 if(state.date !== todayKey){
   const done = Object.values(state.habits).filter(Boolean).length;
-  const percent = Math.round((done/5)*100);
+  let percent = Math.round((done/5)*100);
 
-  // MISS PENALTY
   if(!state.habits.diet) percent -= 10;
 
   state.history.push({date:state.date,score:percent});
@@ -46,20 +54,20 @@ if(state.date !== todayKey){
 
 // ---------- CONFIG ----------
 const habits = {
-  workout:{label:"Workout",points:20,icon:"💪"},
-  steps:{label:"Steps",points:10,icon:"🚶"},
-  diet:{label:"Diet",points:25,icon:"🥗"},
-  grooming:{label:"Grooming",points:10,icon:"🧴"},
-  posture:{label:"Posture",points:10,icon:"🧍"}
+  workout:{label:"Workout",points:20},
+  steps:{label:"Steps",points:10},
+  diet:{label:"Diet",points:25},
+  grooming:{label:"Grooming",points:10},
+  posture:{label:"Posture",points:10}
 };
-
-const focus = ["diet","workout","posture"];
 
 // ---------- RENDER ----------
 function render(){
+  if(!app) return;
+
   app.innerHTML = `
-    <div class="min-h-screen pb-28 text-white"
-      style="background: linear-gradient(160deg,#020617,#0f172a,#1e293b);">
+    <div style="min-height:100vh;padding-bottom:90px;color:white;
+      background:linear-gradient(135deg,#020617,#0f172a,#1e293b)">
 
       ${header()}
       ${page()}
@@ -73,25 +81,22 @@ function render(){
 // ---------- HEADER ----------
 function header(){
   return `
-    <div class="p-4">
-
-      <div class="rounded-3xl p-4 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur border border-white/10 shadow-xl">
-
-        <div class="flex justify-between items-center">
-          <div class="text-lg font-semibold">Level</div>
-          <div class="text-green-400 font-bold">${state.score}/100</div>
+    <div style="padding:16px">
+      <div style="padding:16px;border-radius:20px;
+        background:rgba(255,255,255,0.08);backdrop-filter:blur(10px)">
+        
+        <div style="display:flex;justify-content:space-between">
+          <div>Score</div>
+          <div style="color:#22c55e">${state.score}</div>
         </div>
 
-        <div class="bg-gray-700 h-2 rounded mt-2 overflow-hidden">
-          <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-2"
-            style="width:${state.score}%"></div>
+        <div style="background:#374151;height:6px;border-radius:6px;margin-top:8px">
+          <div style="background:#22c55e;height:6px;border-radius:6px;width:${state.score}%"></div>
         </div>
 
-        <div class="flex justify-between text-sm mt-2 opacity-80">
-          <div>🔥 ${state.streak}</div>
-          <div>🛡 ${state.shield}</div>
+        <div style="margin-top:8px;font-size:12px">
+          🔥 ${state.streak} | 🛡 ${state.shield}
         </div>
-
       </div>
     </div>
   `;
@@ -99,203 +104,145 @@ function header(){
 
 // ---------- HOME ----------
 function home(){
-  const week = getDays(7);
-  const grid = getDays(28);
-
   return `
-    <div class="px-4">
+    <div style="padding:16px">
 
-      <!-- WEEK -->
-      <div class="flex gap-2 mb-3">
-        ${week.map(d=>`
-          <div class="flex-1 p-2 text-center rounded-xl text-sm ${
-            d.score>=70?'bg-green-500':'bg-white/10'
-          }">${d.day}</div>
-        `).join("")}
-      </div>
+      <div style="margin-bottom:10px">Today's Tasks</div>
 
-      <!-- TOP 3 -->
-      <div class="text-sm opacity-60 mb-2">🔥 Focus</div>
-      ${focus.map(k=>card(k,true)).join("")}
+      ${Object.keys(habits).map(k=>`
+        <div class="habit" data-habit="${k}"
+          style="padding:12px;margin-bottom:8px;border-radius:12px;
+          background:${state.habits[k]?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.08)'}">
 
-      <!-- TASKS -->
-      <div class="text-sm opacity-60 mt-4 mb-2">Tasks</div>
-      ${Object.keys(habits).map(k=>card(k,false)).join("")}
-
-      <!-- HEATMAP -->
-      <div class="grid grid-cols-7 gap-2 mt-5">
-        ${grid.map(d=>`
-          <div class="h-10 rounded-xl ${
-            d.score>=70?'bg-green-500':
-            d.score>0?'bg-yellow-500':'bg-white/10'
-          }"></div>
-        `).join("")}
-      </div>
-
-      ${insight()}
-
-    </div>
-  `;
-}
-
-// ---------- CARD ----------
-function card(key,highlight){
-  return `
-    <div class="task p-4 mb-2 rounded-2xl flex justify-between items-center transition active:scale-95 ${
-      highlight ? 'bg-green-500/20 border border-green-400' :
-      state.habits[key] ? 'bg-green-500/20 border border-green-400' :
-      'bg-white/10'
-    }" data-habit="${key}">
-
-      <div class="flex gap-3 items-center">
-        <div class="text-xl">${habits[key].icon}</div>
-        <div>${habits[key].label}</div>
-      </div>
-
-      <div class="text-green-400">+${habits[key].points}</div>
-
-    </div>
-  `;
-}
-
-// ---------- MEALS ----------
-function meals(){
-  return `
-    <div class="px-4">
-
-      <div class="p-4 bg-white/10 rounded-xl mb-3">
-        <input id="foodInput" class="w-full p-2 text-black rounded mb-2" placeholder="Add meal"/>
-        <button data-action="addFood" class="bg-green-500 w-full p-2 rounded">Add</button>
-      </div>
-
-      ${state.foods.map((f,i)=>`
-        <div class="bg-white/10 p-3 mb-2 rounded flex justify-between">
-          ${f}
-          <span data-remove="${i}">❌</span>
+          ${habits[k].label} (+${habits[k].points})
         </div>
       `).join("")}
 
+      ${weeklyReport()}
+
+      ${photoSection()}
+
     </div>
   `;
 }
 
-// ---------- FITNESS ----------
-function fitness(){
-  return section(["Push-ups","Squats","Plank"]);
-}
+// ---------- WEEKLY REPORT ----------
+function weeklyReport(){
+  const last7 = state.history.slice(-7);
+  if(last7.length===0) return "";
 
-// ---------- GROOMING ----------
-function grooming(){
-  return section(["Face wash","Beard trim","Hair"]);
-}
+  const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
 
-// ---------- MIND ----------
-function mind(){
-  return section(["Posture","Confidence","Eye contact"]);
-}
-
-// ---------- SECTION ----------
-function section(list){
-  return `
-    <div class="px-4 space-y-3">
-      ${list.map(x=>`
-        <div class="p-4 bg-white/10 rounded-xl">${x}</div>
-      `).join("")}
-    </div>
-  `;
-}
-
-// ---------- INSIGHT ----------
-function insight(){
-  let msg = "Stay consistent";
-  if(!state.habits.diet) msg="Diet is key today";
-  else if(!state.habits.workout) msg="Workout pending";
-  else if(state.score>60) msg="Strong progress";
+  let msg = "Average week.";
+  if(avg>70) msg="🔥 Strong consistency";
+  else if(avg<40) msg="⚠️ Needs discipline";
 
   return `
-    <div class="mt-4 p-4 bg-white/10 rounded-xl">
+    <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.08)">
+      Weekly Avg: ${avg}% <br/>
       ${msg}
     </div>
   `;
 }
 
-// ---------- NAV ----------
-function nav(){
-  const tabs = [
-    ["home","🏠"],
-    ["meals","🍽"],
-    ["fitness","🏋️"],
-    ["grooming","🧴"],
-    ["mind","🧠"]
-  ];
-
+// ---------- PHOTO TRACK ----------
+function photoSection(){
   return `
-    <div class="fixed bottom-0 left-0 right-0 flex justify-around p-3 bg-black/60 backdrop-blur border-t">
+    <div style="margin-top:16px">
 
-      ${tabs.map(([p,icon])=>`
-        <div class="nav text-xl ${
-          state.page===p?'text-green-400 scale-110':'opacity-60'
-        }" data-page="${p}">
-          ${icon}
-        </div>
-      `).join("")}
+      <div style="margin-bottom:8px">Progress Photos</div>
+
+      <input type="file" accept="image/*" id="photoInput"/>
+
+      <div style="display:flex;gap:10px;margin-top:10px;overflow:auto">
+        ${state.photos.map(p=>`
+          <img src="${p}" style="height:80px;border-radius:10px"/>
+        `).join("")}
+      </div>
 
     </div>
   `;
 }
 
-// ---------- HELPERS ----------
-function getDays(n){
-  const arr=[];
-  for(let i=n-1;i>=0;i--){
-    const d=new Date();
-    d.setDate(d.getDate()-i);
-    const key=d.toISOString().slice(0,10);
-    const rec=state.history.find(x=>x.date===key);
-    arr.push({day:d.getDate(),score:rec?rec.score:0});
+// ---------- OTHER PAGES ----------
+function simplePage(title){
+  return `<div style="padding:16px">${title}</div>`;
+}
+
+function page(){
+  switch(state.page){
+    case "home": return home();
+    case "meals": return simplePage("Meals");
+    case "fitness": return simplePage("Fitness");
+    case "grooming": return simplePage("Grooming");
+    case "mind": return simplePage("Posture & Confidence");
+    default: return home();
   }
-  return arr;
+}
+
+// ---------- NAV ----------
+function nav(){
+  return `
+    <div style="position:fixed;bottom:0;width:100%;
+      display:flex;justify-content:space-around;
+      background:rgba(0,0,0,0.7);padding:10px">
+
+      ${navItem("home","🏠")}
+      ${navItem("meals","🍽")}
+      ${navItem("fitness","🏋️")}
+      ${navItem("grooming","🧴")}
+      ${navItem("mind","🧠")}
+
+    </div>
+  `;
+}
+
+function navItem(p,icon){
+  return `
+    <div class="nav" data-page="${p}"
+      style="font-size:20px;opacity:${state.page===p?1:0.5}">
+      ${icon}
+    </div>
+  `;
 }
 
 // ---------- EVENTS ----------
 function bindEvents(){
-  app.onclick=(e)=>{
+  app.onclick = (e)=>{
 
     if(e.target.dataset.page){
-      state.page=e.target.dataset.page;
+      state.page = e.target.dataset.page;
       save(); render();
     }
 
     if(e.target.dataset.habit){
-      const k=e.target.dataset.habit;
-      const h=habits[k];
+      const k = e.target.dataset.habit;
+      const h = habits[k];
 
-      state.habits[k]=!state.habits[k];
-      state.score=Math.min(100,Math.max(0,state.score+(state.habits[k]?h.points:-h.points)));
+      state.habits[k] = !state.habits[k];
+      state.score += state.habits[k] ? h.points : -h.points;
+      state.score = Math.max(0, Math.min(100, state.score));
 
-      animateTap(e.target);
-
-      save(); render();
-    }
-
-    if(e.target.dataset.action==="addFood"){
-      const val=document.getElementById("foodInput").value;
-      if(!val) return;
-      state.foods.push(val);
-      save(); render();
-    }
-
-    if(e.target.dataset.remove){
-      state.foods.splice(e.target.dataset.remove,1);
       save(); render();
     }
   };
+
+  // PHOTO
+  const input = document.getElementById("photoInput");
+  if(input){
+    input.onchange = ()=>{
+      const file = input.files[0];
+      if(!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e){
+        state.photos.push(e.target.result);
+        save(); render();
+      };
+      reader.readAsDataURL(file);
+    };
+  }
 }
 
-// ---------- TAP ANIMATION ----------
-function animateTap(el){
-  el.style.transform="scale(0.95)";
-  setTimeout(()=>el.style.transform="scale(1)",100);
-}
-
+// ---------- INIT ----------
 render();
