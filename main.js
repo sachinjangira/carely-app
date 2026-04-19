@@ -1,14 +1,8 @@
 const app = document.getElementById("app");
-
 const today = new Date().toISOString().slice(0,10);
 
-// ---------- SAFE STATE ----------
-function getState(){
-  try { return JSON.parse(localStorage.getItem("carely_final")) || null; }
-  catch { return null; }
-}
-
-let state = getState() || {
+// ---------- STATE ----------
+let state = JSON.parse(localStorage.getItem("carely_pro")) || {
   date: today,
   page: "home",
   score: 0,
@@ -26,7 +20,7 @@ let state = getState() || {
 };
 
 function save(){
-  localStorage.setItem("carely_final", JSON.stringify(state));
+  localStorage.setItem("carely_pro", JSON.stringify(state));
 }
 
 // ---------- RESET ----------
@@ -46,7 +40,16 @@ if(state.date !== today){
   save();
 }
 
-// ---------- CONFIG ----------
+// ---------- ICONS ----------
+const icons = {
+  home:`<svg viewBox="0 0 24 24" fill="none"><path d="M3 10L12 3l9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/></svg>`,
+  meal:`<svg viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2"/></svg>`,
+  gym:`<svg viewBox="0 0 24 24"><path d="M2 12h20" stroke="currentColor" stroke-width="2"/></svg>`,
+  grooming:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/></svg>`,
+  mind:`<svg viewBox="0 0 24 24"><path d="M12 2v20" stroke="currentColor" stroke-width="2"/></svg>`
+};
+
+// ---------- HABITS ----------
 const habits = {
   workout:{label:"Workout",points:20},
   steps:{label:"Steps",points:10},
@@ -58,134 +61,107 @@ const habits = {
 // ---------- RENDER ----------
 function render(){
   app.innerHTML = `
-    <div style="min-height:100vh;padding-bottom:90px;
-    background:linear-gradient(145deg,#020617,#0f172a,#1e293b);
-    font-family:system-ui;color:white">
+  <div style="min-height:100vh;padding-bottom:100px;
+  background:radial-gradient(circle at top,#1e293b,#020617);
+  font-family:system-ui;color:white">
 
-      ${header()}
-      ${page()}
-      ${nav()}
+    ${header()}
+    ${page()}
+    ${nav()}
 
-    </div>
-  `;
+  </div>`;
   bindEvents();
 }
 
 // ---------- HEADER ----------
 function header(){
   return `
-    <div style="padding:16px">
+  <div style="padding:20px">
+    <div style="padding:18px;border-radius:22px;
+    background:rgba(255,255,255,0.08);
+    box-shadow:0 20px 40px rgba(0,0,0,0.4)">
 
-      <div style="padding:16px;border-radius:20px;
-      background:rgba(255,255,255,0.08);
-      box-shadow:0 10px 25px rgba(0,0,0,0.3)">
-
-        <div style="display:flex;justify-content:space-between">
-          <div style="font-size:18px">Score</div>
-          <div style="color:#22c55e;font-weight:600">${state.score}</div>
-        </div>
-
-        <div style="background:#374151;height:6px;border-radius:6px;margin-top:10px">
-          <div style="background:#22c55e;height:6px;border-radius:6px;width:${state.score}%"></div>
-        </div>
-
-        <div style="margin-top:8px;font-size:12px;opacity:0.8">
-          🔥 ${state.streak} day streak
-        </div>
-
+      <div style="display:flex;justify-content:space-between">
+        <div style="font-size:18px">Score</div>
+        <div style="color:#22c55e;font-weight:700">${state.score}</div>
       </div>
+
+      <div style="height:6px;background:#334155;border-radius:6px;margin-top:10px">
+        <div style="height:6px;background:#22c55e;border-radius:6px;width:${state.score}%"></div>
+      </div>
+
+      <div style="margin-top:10px;font-size:13px;opacity:0.8">
+        🔥 ${state.streak} day streak
+      </div>
+
     </div>
-  `;
+  </div>`;
 }
 
 // ---------- HOME ----------
 function home(){
   return `
-    <div style="padding:16px">
+  <div style="padding:16px">
 
-      ${graphSection()}
+    ${graph()}
 
-      <div style="margin-top:16px;font-size:14px;opacity:0.7">Today's Tasks</div>
+    <div style="margin-top:14px;font-size:14px;opacity:0.6">Today's Tasks</div>
 
-      ${Object.keys(habits).map(k=>`
-        <div class="habit" data-habit="${k}"
-        style="padding:14px;margin-top:10px;border-radius:14px;
-        background:${state.habits[k]?'rgba(34,197,94,0.3)':'rgba(255,255,255,0.08)'};
-        box-shadow:0 5px 15px rgba(0,0,0,0.2);
-        transition:0.2s">
+    ${Object.keys(habits).map(k=>`
+      <div class="habit" data-habit="${k}"
+      style="padding:16px;margin-top:10px;border-radius:16px;
+      background:${state.habits[k]?'linear-gradient(135deg,#22c55e,#16a34a)':'rgba(255,255,255,0.06)'};
+      box-shadow:0 10px 25px rgba(0,0,0,0.3);
+      transition:0.2s">
 
-        ${habits[k].label}
-        <span style="float:right;color:#22c55e">+${habits[k].points}</span>
+      ${habits[k].label}
+      <span style="float:right">${habits[k].points}</span>
 
-        </div>
-      `).join("")}
+      </div>
+    `).join("")}
 
-      ${weeklyReport()}
-      ${photoSection()}
+    ${photos()}
 
-    </div>
-  `;
+  </div>`;
 }
 
 // ---------- GRAPH ----------
-function graphSection(){
+function graph(){
   const data = state.history.slice(-7);
-
-  if(data.length === 0) return "";
+  if(data.length===0) return "";
 
   return `
-    <div style="padding:16px;border-radius:16px;
-    background:rgba(255,255,255,0.08);
-    margin-bottom:16px">
+  <div style="padding:16px;border-radius:18px;
+  background:rgba(255,255,255,0.06)">
 
-      <div style="margin-bottom:10px;font-size:14px">Last 7 Days</div>
+    <div style="margin-bottom:10px">Weekly Progress</div>
 
-      <div style="display:flex;align-items:flex-end;height:120px;gap:6px">
-        ${data.map(d=>`
-          <div style="flex:1;text-align:center">
-            <div style="background:#22c55e;
-              height:${d.score}%;
-              border-radius:6px"></div>
-            <div style="font-size:10px;margin-top:4px">
-              ${new Date(d.date).getDate()}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-
+    <div style="display:flex;height:120px;align-items:flex-end;gap:8px">
+      ${data.map(d=>`
+        <div style="flex:1;text-align:center">
+          <div style="height:${d.score}%;
+          background:#22c55e;border-radius:6px"></div>
+          <div style="font-size:10px">${new Date(d.date).getDate()}</div>
+        </div>
+      `).join("")}
     </div>
-  `;
+
+  </div>`;
 }
 
-// ---------- WEEKLY ----------
-function weeklyReport(){
-  const last7 = state.history.slice(-7);
-  if(last7.length===0) return "";
-
-  const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
-
+// ---------- PHOTOS ----------
+function photos(){
   return `
-    <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.08)">
-      Weekly Avg: ${avg}%<br/>
-      ${avg>70?"🔥 Strong":"⚠ Improve consistency"}
-    </div>
-  `;
-}
+  <div style="margin-top:16px">
+    <div style="margin-bottom:6px">Progress</div>
+    <input type="file" id="photoInput"/>
 
-// ---------- PHOTO ----------
-function photoSection(){
-  return `
-    <div style="margin-top:16px">
-      <div style="margin-bottom:6px">Progress Photos</div>
-      <input type="file" id="photoInput"/>
-
-      <div style="display:flex;gap:8px;margin-top:8px;overflow:auto">
-        ${state.photos.map(p=>`
-          <img src="${p}" style="height:70px;border-radius:10px"/>
-        `).join("")}
-      </div>
+    <div style="display:flex;gap:8px;margin-top:8px;overflow:auto">
+      ${state.photos.map(p=>`
+        <img src="${p}" style="height:70px;border-radius:12px"/>
+      `).join("")}
     </div>
-  `;
+  </div>`;
 }
 
 // ---------- PAGE ----------
@@ -196,40 +172,38 @@ function page(){
     case "fitness": return section("Fitness");
     case "grooming": return section("Grooming");
     case "mind": return section("Posture & Confidence");
-    default: return home();
   }
 }
 
-function section(title){
-  return `<div style="padding:16px">${title}</div>`;
+function section(t){
+  return `<div style="padding:20px">${t}</div>`;
 }
 
 // ---------- NAV ----------
 function nav(){
   return `
-    <div style="position:fixed;bottom:0;width:100%;
-    display:flex;justify-content:space-around;
-    background:rgba(0,0,0,0.7);padding:12px;
-    backdrop-filter:blur(10px)">
+  <div style="position:fixed;bottom:0;width:100%;
+  display:flex;justify-content:space-around;
+  padding:12px;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(10px)">
 
-      ${navItem("home","🏠")}
-      ${navItem("meals","🍽")}
-      ${navItem("fitness","🏋️")}
-      ${navItem("grooming","🧴")}
-      ${navItem("mind","🧠")}
+    ${navItem("home",icons.home)}
+    ${navItem("meals",icons.meal)}
+    ${navItem("fitness",icons.gym)}
+    ${navItem("grooming",icons.grooming)}
+    ${navItem("mind",icons.mind)}
 
-    </div>
-  `;
+  </div>`;
 }
 
 function navItem(p,icon){
   return `
-    <div class="nav" data-page="${p}"
-    style="font-size:20px;
-    color:${state.page===p?'#22c55e':'#aaa'}">
-    ${icon}
-    </div>
-  `;
+  <div class="nav" data-page="${p}"
+  style="width:26px;height:26px;
+  color:${state.page===p?'#22c55e':'#94a3b8'};
+  transform:${state.page===p?'scale(1.2)':'scale(1)'}">
+  ${icon}
+  </div>`;
 }
 
 // ---------- EVENTS ----------
@@ -237,13 +211,13 @@ function bindEvents(){
 
   app.onclick = (e)=>{
 
-    if(e.target.dataset.page){
-      state.page = e.target.dataset.page;
+    if(e.target.closest(".nav")){
+      state.page = e.target.closest(".nav").dataset.page;
       save(); render();
     }
 
-    if(e.target.dataset.habit){
-      const k = e.target.dataset.habit;
+    if(e.target.closest(".habit")){
+      const k = e.target.closest(".habit").dataset.habit;
       const h = habits[k];
 
       state.habits[k] = !state.habits[k];
