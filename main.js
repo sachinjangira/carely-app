@@ -47,19 +47,19 @@ const icons = {
   </svg>`,
 
   meal: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M4 3h16v18H4z"/>
+    <path d="M3 3h18v4H3zM6 7v14M18 7v14"/>
   </svg>`,
 
   gym: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M2 12h20M6 6v12M18 6v12"/>
+    <path d="M6 6h4v12H6zM14 6h4v12h-4zM2 9h4v6H2zM18 9h4v6h-4z"/>
   </svg>`,
 
   grooming: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-    <circle cx="12" cy="12" r="8"/>
+    <path d="M6 2h12v20H6zM9 6h6"/>
   </svg>`,
 
   mind: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M12 2v20M2 12h20"/>
+    <path d="M12 2a6 6 0 0 0-6 6c0 2.5 2 4 2 6h8c0-2 2-3.5 2-6a6 6 0 0 0-6-6z"/>
   </svg>`
 };
 // ---------- HABITS ----------
@@ -195,43 +195,32 @@ function section(t){
 // ---------- NAV ----------
 function nav(){
   return `
-  <div style="
-    position:fixed;
-    bottom:0;
-    width:100%;
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
-    padding:12px 0;
-    background:rgba(0,0,0,0.7);
-    backdrop-filter:blur(12px);
-    border-top:1px solid rgba(255,255,255,0.1);
-  ">
+  <div style="position:fixed;bottom:0;width:100%;
+  display:flex;justify-content:space-around;
+  padding:10px;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(12px)">
 
-    ${navItem("home",icons.home)}
-    ${navItem("meals",icons.meal)}
-    ${navItem("fitness",icons.gym)}
-    ${navItem("grooming",icons.grooming)}
-    ${navItem("mind",icons.mind)}
+    ${navItem("home",icons.home,"Home")}
+    ${navItem("meals",icons.meal,"Meals")}
+    ${navItem("fitness",icons.gym,"Fitness")}
+    ${navItem("grooming",icons.grooming,"Groom")}
+    ${navItem("mind",icons.mind,"Mind")}
 
   </div>`;
 }
 
-function navItem(p,icon){
+function navItem(p,icon,label){
   return `
   <div class="nav" data-page="${p}"
     style="
       display:flex;
-      justify-content:center;
+      flex-direction:column;
       align-items:center;
-      width:48px;
-      height:48px;
-      border-radius:12px;
+      font-size:11px;
       color:${state.page===p ? '#22c55e' : '#64748b'};
-      background:${state.page===p ? 'rgba(34,197,94,0.15)' : 'transparent'};
-      transition:0.2s;
     ">
     ${icon}
+    <div style="margin-top:4px">${label}</div>
   </div>`;
 }
 
