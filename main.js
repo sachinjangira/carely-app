@@ -1,8 +1,21 @@
 const app = document.getElementById("app");
-
-// ---------- CONFIG ----------
-const STORAGE_KEY = "carely_prod_final";
 const today = new Date().toISOString().slice(0,10);
+
+// ---------- GOAL CONFIG ----------
+const GOALS = {
+  fat_loss: {
+    name: "Fat Loss",
+    weights: { diet:4, workout:3, steps:2, grooming:1, posture:1 }
+  },
+  confidence: {
+    name: "Confidence",
+    weights: { posture:4, workout:2, diet:2, grooming:2, steps:1 }
+  },
+  grooming: {
+    name: "Grooming",
+    weights: { grooming:4, diet:2, posture:2, workout:1, steps:1 }
+  }
+};
 
 // ---------- INITIAL STATE ----------
 function getInitialState(){
@@ -11,6 +24,7 @@ function getInitialState(){
     page: "home",
     score: 0,
     streak: 0,
+    goal: "fat_loss",
     habits: {
       workout:false,
       steps:false,
@@ -29,59 +43,46 @@ function getInitialState(){
   };
 }
 
-// ---------- LOAD ----------
-function loadState(){
-  try{
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || getInitialState();
-  }catch{
-    return getInitialState();
-  }
-}
-
-let state = loadState();
+let state = JSON.parse(localStorage.getItem("carely_goal")) || getInitialState();
 
 function save(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem("carely_goal", JSON.stringify(state));
 }
 
-// ---------- HABITS ----------
-const habits = {
-  workout:{label:"Workout",points:20,weight:2},
-  steps:{label:"Steps",points:10,weight:1},
-  diet:{label:"Diet",points:25,weight:3},
-  grooming:{label:"Grooming",points:10,weight:1},
-  posture:{label:"Posture",points:10,weight:1}
-};
-
-// ---------- DAILY RESET ----------
+// ---------- RESET ----------
 if(state.date !== today){
 
-  let totalWeight = 0;
-  let achievedWeight = 0;
+  const goalWeights = GOALS[state.goal].weights;
 
-  Object.keys(habits).forEach(k=>{
-    totalWeight += habits[k].weight;
-    if(state.habits[k]) achievedWeight += habits[k].weight;
+  let total = 0, done = 0;
+
+  Object.keys(goalWeights).forEach(k=>{
+    total += goalWeights[k];
+    if(state.habits[k]) done += goalWeights[k];
   });
 
-  const percent = Math.round((achievedWeight / totalWeight) * 100);
+  const percent = Math.round((done/total)*100);
 
   state.history.push({date:state.date,score:percent});
   if(state.history.length>90) state.history.shift();
 
-  if(percent >= 70) state.streak++;
-  else state.streak = 0;
-
-  if(!state.habits.diet){
-    state.score -= 15;
-  }
+  state.streak = percent >= 70 ? state.streak + 1 : 0;
 
   state.date = today;
-  state.score = Math.max(0,state.score);
+  state.score = 0;
   Object.keys(state.habits).forEach(k=>state.habits[k]=false);
 
   save();
 }
+
+// ---------- BASE HABITS ----------
+const habits = {
+  workout:{label:"Workout",points:20},
+  steps:{label:"Steps",points:10},
+  diet:{label:"Diet",points:25},
+  grooming:{label:"Grooming",points:10},
+  posture:{label:"Posture",points:10}
+};
 
 // ---------- RENDER ----------
 function render(){
@@ -107,7 +108,7 @@ function header(){
     background:rgba(255,255,255,0.06)">
 
       <div style="display:flex;justify-content:space-between">
-        <div>Score</div>
+        <div>${GOALS[state.goal].name}</div>
         <div style="color:#22c55e">${state.score}</div>
       </div>
 
@@ -124,12 +125,42 @@ function header(){
   </div>`;
 }
 
+// ---------- SMART FEEDBACK ----------
+function feedback(){
+
+  const g = state.goal;
+
+  if(g==="fat_loss"){
+    if(!state.habits.diet) return msg("Diet is your #1 priority.");
+    if(!state.habits.workout) return msg("Workout missing.");
+    return msg("Stay consistent.");
+  }
+
+  if(g==="confidence"){
+    if(!state.habits.posture) return msg("Fix posture first.");
+    return msg("Speak slowly and clearly.");
+  }
+
+  if(g==="grooming"){
+    if(!state.habits.grooming) return msg("Grooming affects perception instantly.");
+    return msg("Maintain freshness.");
+  }
+
+  return "";
+}
+
+function msg(text){
+  return `<div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.08)">
+  ${text}</div>`;
+}
+
 // ---------- HOME ----------
 function home(){
   return `
   <div style="padding:16px">
 
-    ${weeklyStats()}
+    ${goalSelector()}
+
     ${heatmap()}
 
     <div style="margin-top:12px">Today's Tasks</div>
@@ -138,46 +169,26 @@ function home(){
       <div class="habit" data-habit="${k}"
       style="padding:12px;margin-top:8px;border-radius:10px;
       background:${state.habits[k]?'#22c55e':'rgba(255,255,255,0.08)'}">
-      ${habits[k].label} (+${habits[k].points})
+      ${habits[k].label}
       </div>
     `).join("")}
 
     ${feedback()}
-    ${photos()}
 
   </div>`;
 }
 
-// ---------- FEEDBACK ----------
-function feedback(){
-  let msg = "Good start.";
-
-  if(!state.habits.diet){
-    msg = "Diet is breaking your progress.";
-  }
-  else if(!state.habits.workout){
-    msg = "Workout missing today.";
-  }
-  else if(state.score > 70){
-    msg = "Strong day. Keep consistency.";
-  }
-
+// ---------- GOAL SELECTOR ----------
+function goalSelector(){
   return `
-  <div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.08)">
-    ${msg}
-  </div>`;
-}
-
-// ---------- WEEKLY ----------
-function weeklyStats(){
-  const last7 = state.history.slice(-7);
-  if(!last7.length) return "";
-
-  const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
-
-  return `
-  <div style="padding:12px;border-radius:10px;background:rgba(255,255,255,0.08)">
-    Weekly Avg: ${avg}% ${avg>70?"🔥":"⚠"}
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    ${Object.keys(GOALS).map(g=>`
+      <div data-goal="${g}"
+      style="flex:1;padding:8px;text-align:center;border-radius:8px;
+      background:${state.goal===g?'#22c55e':'rgba(255,255,255,0.08)'}">
+      ${GOALS[g].name}
+      </div>
+    `).join("")}
   </div>`;
 }
 
@@ -207,107 +218,18 @@ function heatmap(){
   </div>`;
 }
 
-// ---------- PHOTOS ----------
-function photos(){
-  return `
-  <div style="margin-top:12px">
-    <input type="file" id="photoInput"/>
-    <div style="display:flex;gap:6px;margin-top:6px">
-      ${state.photos.map(p=>`<img src="${p}" style="height:60px"/>`).join("")}
-    </div>
-  </div>`;
-}
-
 // ---------- PAGES ----------
 function page(){
-  switch(state.page){
-    case "home": return home();
-    case "meals": return meals();
-    case "fitness": return fitness();
-    case "grooming": return grooming();
-    case "mind": return mind();
-  }
-}
-
-// ---------- MEALS ----------
-function meals(){
-  return `
-  <div style="padding:16px">
-    ${["Breakfast","Lunch","Dinner","Snacks"].map(m=>`
-      <input data-meal="${m}" value="${state.meals[m]}"
-      placeholder="${m}"
-      style="width:100%;margin-bottom:10px;padding:10px;border-radius:10px"/>
-    `).join("")}
-  </div>`;
-}
-
-// ---------- FITNESS ----------
-function fitness(){
-  return `
-  <div style="padding:16px">
-    ${exercise("Push-ups","workout")}
-    ${exercise("Squats","steps")}
-    ${exercise("Plank","posture")}
-  </div>`;
-}
-
-function exercise(name,key){
-  return `
-  <div class="habit" data-habit="${key}"
-  style="padding:12px;margin-bottom:8px;border-radius:10px;
-  background:${state.habits[key]?'#22c55e':'rgba(255,255,255,0.08)'}">
-    ${name}
-  </div>`;
-}
-
-// ---------- GROOMING ----------
-function grooming(){
-  return `
-  <div style="padding:16px">
-    ${check("Face Wash","grooming")}
-    ${check("Beard Trim","grooming")}
-  </div>`;
-}
-
-// ---------- MIND ----------
-function mind(){
-  return `
-  <div style="padding:16px">
-    ${check("Posture","posture")}
-    ${check("Confidence Practice","diet")}
-  </div>`;
-}
-
-function check(label,key){
-  return `
-  <div class="habit" data-habit="${key}"
-  style="padding:12px;margin-bottom:8px;border-radius:10px;
-  background:${state.habits[key]?'#22c55e':'rgba(255,255,255,0.08)'}">
-    ${label}
-  </div>`;
+  return home();
 }
 
 // ---------- NAV ----------
 function nav(){
   return `
   <div style="position:fixed;bottom:0;width:100%;
-  display:flex;justify-content:space-around;
+  display:flex;justify-content:center;
   background:rgba(0,0,0,0.8);padding:10px">
-
-    ${navItem("home","🏠")}
-    ${navItem("meals","🍽")}
-    ${navItem("fitness","🏋️")}
-    ${navItem("grooming","🧴")}
-    ${navItem("mind","🧠")}
-
-  </div>`;
-}
-
-function navItem(p,icon){
-  return `
-  <div class="nav" data-page="${p}"
-  style="color:${state.page===p?'#22c55e':'#aaa'}">
-  ${icon}
+    <div>Carely</div>
   </div>`;
 }
 
@@ -315,20 +237,22 @@ function navItem(p,icon){
 function bindEvents(){
 
   app.onclick = e=>{
-    const t = e.target.closest("[data-page],[data-habit]");
+    const t = e.target.closest("[data-habit],[data-goal]");
     if(!t) return;
 
-    if(t.dataset.page){
-      state.page = t.dataset.page;
+    // GOAL SWITCH
+    if(t.dataset.goal){
+      state.goal = t.dataset.goal;
       save(); render();
     }
 
+    // HABITS
     if(t.dataset.habit){
       const k = t.dataset.habit;
-      const h = habits[k];
+      const base = habits[k].points;
+      const weight = GOALS[state.goal].weights[k] || 1;
 
-      const multiplier = 1 + (state.streak * 0.05);
-      const value = Math.round(h.points * multiplier);
+      const value = base * weight;
 
       state.habits[k] = !state.habits[k];
       state.score += state.habits[k] ? value : -value;
@@ -338,28 +262,6 @@ function bindEvents(){
       save(); render();
     }
   };
-
-  document.querySelectorAll("[data-meal]").forEach(input=>{
-    input.oninput = e=>{
-      state.meals[e.target.dataset.meal] = e.target.value;
-      save();
-    };
-  });
-
-  const photo = document.getElementById("photoInput");
-  if(photo){
-    photo.onchange = ()=>{
-      const file = photo.files[0];
-      if(!file) return;
-
-      const reader = new FileReader();
-      reader.onload = e=>{
-        state.photos.push(e.target.result);
-        save(); render();
-      };
-      reader.readAsDataURL(file);
-    };
-  }
 }
 
 // ---------- INIT ----------
