@@ -1,13 +1,12 @@
 const app = document.getElementById("app");
 
-const STORAGE = "carely_v11_final";
+const STORAGE = "carely_elite_v1";
 const today = new Date().toISOString().slice(0,10);
 
 // ---------- STATE ----------
 let state = JSON.parse(localStorage.getItem(STORAGE)) || {
   date: today,
   page: "home",
-  goal: "fat_loss",
   score: 0,
   streak: 0,
   xp: 0,
@@ -20,8 +19,7 @@ let state = JSON.parse(localStorage.getItem(STORAGE)) || {
     posture:false
   },
   history: [],
-  photos: [],
-  achievements: []
+  photos: []
 };
 
 function save(){
@@ -36,8 +34,6 @@ if(state.date !== today){
 
   if(state.score >= 60){
     state.streak++;
-    if(state.streak === 3) state.xp += 20;
-    if(state.streak === 7) state.xp += 50;
   } else {
     state.streak = 0;
   }
@@ -52,22 +48,41 @@ if(state.date !== today){
 // ---------- LEVEL ----------
 function updateLevel(){
   state.level = Math.floor(state.xp / 100) + 1;
+  return state.xp % 100;
 }
 
 // ---------- HEADER ----------
 function header(){
-  updateLevel();
+  const xpProgress = updateLevel();
 
   return `
   <div style="padding:16px">
-    <div style="padding:16px;border-radius:16px;background:#1e293b">
+
+    <div style="
+      padding:18px;
+      border-radius:20px;
+      background:linear-gradient(135deg,#1e293b,#0f172a);
+      box-shadow:0 10px 30px rgba(0,0,0,0.4)
+    ">
+
       <div style="display:flex;justify-content:space-between">
-        <div>Level ${state.level}</div>
+        <div style="font-size:16px">Level ${state.level}</div>
         <div style="color:#22c55e">${state.score}</div>
       </div>
-      <div style="margin-top:6px;font-size:12px">
-        🔥 ${state.streak} | ⚡ ${state.xp} XP
+
+      <div style="margin-top:10px;height:8px;background:#1e293b;border-radius:10px">
+        <div style="
+          height:8px;
+          width:${xpProgress}%;
+          background:linear-gradient(90deg,#22c55e,#4ade80);
+          border-radius:10px
+        "></div>
       </div>
+
+      <div style="margin-top:8px;font-size:12px;color:#94a3b8">
+        🔥 ${state.streak} day streak • ⚡ ${state.xp} XP
+      </div>
+
     </div>
   </div>`;
 }
@@ -77,10 +92,11 @@ function home(){
   return `
   <div style="padding:16px">
 
-    ${goalSelector()}
     ${calendar()}
 
-    <div style="margin-top:12px">Today's Tasks</div>
+    <div style="margin-top:16px;font-size:14px;color:#94a3b8">
+      Today's Execution
+    </div>
 
     ${task("Workout","workout",15)}
     ${task("Steps","steps",10)}
@@ -88,9 +104,7 @@ function home(){
     ${task("Grooming","grooming",5)}
     ${task("Posture","posture",5)}
 
-    ${smart()}
-
-    ${achievementsUI()}
+    ${aiSuggestions()}
 
   </div>`;
 }
@@ -99,54 +113,77 @@ function home(){
 function task(label,key,xp){
   return `
   <div data-habit="${key}" data-xp="${xp}"
-  style="padding:12px;margin-top:8px;border-radius:10px;
-  background:${state.habits[key]?'#22c55e':'#1e293b'}">
-    ${label} (+${xp} XP)
+  style="
+    margin-top:10px;
+    padding:14px;
+    border-radius:14px;
+    background:${state.habits[key]
+      ?'linear-gradient(135deg,#22c55e,#16a34a)'
+      :'rgba(255,255,255,0.05)'};
+    backdrop-filter:blur(10px)
+  ">
+    ${label} <span style="opacity:0.6">+${xp} XP</span>
   </div>`;
 }
 
-// ---------- SMART ----------
-function smart(){
-  if(!state.habits.diet) return box("⚡ Diet = fastest fat loss");
-  if(!state.habits.workout) return box("⚡ Do 5 min workout now");
-  return box("🔥 You're on track");
-}
+// ---------- AI SUGGESTIONS ----------
+function aiSuggestions(){
 
-function box(t){
-  return `<div style="margin-top:12px;padding:10px;background:#334155;border-radius:10px">${t}</div>`;
+  let msg = "";
+
+  if(!state.habits.diet){
+    msg = "Fix diet first. It drives visible change fastest.";
+  }
+  else if(!state.habits.workout){
+    msg = "Add quick workout. Even 5 mins matters.";
+  }
+  else if(state.streak >= 3){
+    msg = "Push harder today. You're building momentum.";
+  }
+  else{
+    msg = "Stay consistent. Small wins compound.";
+  }
+
+  return `
+  <div style="
+    margin-top:14px;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.05)
+  ">
+    ⚡ ${msg}
+  </div>`;
 }
 
 // ---------- CALENDAR ----------
 function calendar(){
-  let grid="";
+
+  let grid = "";
+
   for(let i=6;i>=0;i--){
-    const d=new Date();
+    const d = new Date();
     d.setDate(d.getDate()-i);
 
-    grid+=`
+    grid += `
     <div style="text-align:center">
-      <div style="font-size:11px">${d.getDate()}</div>
-      <div style="width:12px;height:12px;background:#1e293b;margin:auto"></div>
+      <div style="font-size:11px;color:#94a3b8">${d.getDate()}</div>
+      <div style="
+        width:14px;
+        height:14px;
+        margin:auto;
+        border-radius:4px;
+        background:#1e293b
+      "></div>
     </div>`;
   }
 
   return `
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px">
+  <div style="
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+  ">
     ${grid}
-  </div>`;
-}
-
-// ---------- GOALS ----------
-function goalSelector(){
-  return `
-  <div style="display:flex;gap:6px">
-    ${["fat_loss","confidence","grooming"].map(g=>`
-      <div data-goal="${g}"
-      style="flex:1;text-align:center;padding:8px;border-radius:8px;
-      background:${state.goal===g?'#22c55e':'#1e293b'}">
-        ${g.replace("_"," ").toUpperCase()}
-      </div>
-    `).join("")}
   </div>`;
 }
 
@@ -154,10 +191,11 @@ function goalSelector(){
 function meals(){
   return `
   <div style="padding:16px">
-    <div>Meal Plan</div>
-    <div style="margin-top:10px">Breakfast: Sattu + Roti</div>
-    <div>Lunch: Roti + Sabzi</div>
-    <div>Dinner: Light Roti + Dal</div>
+    <div style="font-size:14px;color:#94a3b8">Meal Plan</div>
+
+    ${card("Breakfast","Sattu + 2 roti")}
+    ${card("Lunch","Roti + sabzi")}
+    ${card("Dinner","Light roti + dal")}
   </div>`;
 }
 
@@ -165,10 +203,11 @@ function meals(){
 function fitness(){
   return `
   <div style="padding:16px">
-    <div>Workout</div>
-    <div style="margin-top:10px">Pushups x10</div>
-    <div>Squats x15</div>
-    <div>Plank 30 sec</div>
+    <div style="font-size:14px;color:#94a3b8">Workout Plan</div>
+
+    ${card("Pushups","3 x 10")}
+    ${card("Squats","3 x 15")}
+    ${card("Plank","30 sec")}
   </div>`;
 }
 
@@ -177,7 +216,6 @@ function progress(){
   return `
   <div style="padding:16px">
 
-    <div>Upload Photo</div>
     <input type="file" id="photoInput"/>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
@@ -191,7 +229,7 @@ function progress(){
   </div>`;
 }
 
-// ---------- WEEKLY REPORT ----------
+// ---------- WEEKLY ----------
 function weeklyReport(){
   const last7 = state.history.slice(-7);
   if(last7.length===0) return "";
@@ -199,50 +237,59 @@ function weeklyReport(){
   const avg = Math.round(last7.reduce((a,b)=>a+b.score,0)/last7.length);
 
   return `
-  <div style="margin-top:20px;padding:12px;background:#1e293b;border-radius:12px">
-    <div>📊 Weekly Report</div>
-    <div>Average: ${avg}</div>
-    <div>Streak: ${state.streak}</div>
+  <div style="
+    margin-top:20px;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.05)
+  ">
+    📊 Weekly Avg: ${avg}
   </div>`;
 }
 
-// ---------- ACHIEVEMENTS ----------
-function achievementsUI(){
-  let unlocked=[];
-
-  if(state.streak>=3 && !state.achievements.includes("3")){
-    state.achievements.push("3");
-    unlocked.push("🔥 3 Day Streak");
-  }
-
-  if(state.xp>=100 && !state.achievements.includes("xp")){
-    state.achievements.push("xp");
-    unlocked.push("⚡ 100 XP");
-  }
-
-  save();
-
-  return unlocked.map(a=>`
-    <div style="margin-top:6px;padding:8px;background:#22c55e;color:black;border-radius:8px">
-      ${a}
-    </div>
-  `).join("");
+// ---------- CARD ----------
+function card(title,val){
+  return `
+  <div style="
+    margin-top:10px;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(255,255,255,0.05)
+  ">
+    <b>${title}</b><br>${val}
+  </div>`;
 }
 
 // ---------- NAV ----------
 function nav(){
   return `
-  <div style="position:fixed;bottom:0;width:100%;display:flex;justify-content:space-around;background:#020617;padding:12px">
+  <div style="
+    position:fixed;
+    bottom:10px;
+    left:10px;
+    right:10px;
+    display:flex;
+    justify-content:space-around;
+    padding:14px;
+    border-radius:20px;
+    background:rgba(15,23,42,0.9)
+  ">
     ${navItem("home","🏠")}
     ${navItem("meals","🍽")}
     ${navItem("fitness","🏋️")}
     ${navItem("progress","📈")}
-    ${navItem("mind","🧠")}
   </div>`;
 }
 
 function navItem(p,i){
-  return `<div data-page="${p}" style="color:${state.page===p?'#22c55e':'#64748b'}">${i}</div>`;
+  return `
+  <div data-page="${p}"
+  style="
+    color:${state.page===p?'#22c55e':'#64748b'};
+    font-size:18px
+  ">
+    ${i}
+  </div>`;
 }
 
 // ---------- ROUTER ----------
@@ -251,22 +298,16 @@ function screen(){
   if(state.page==="meals") return meals();
   if(state.page==="fitness") return fitness();
   if(state.page==="progress") return progress();
-  if(state.page==="mind") return "<div style='padding:16px'>Confidence System</div>";
 }
 
 // ---------- EVENTS ----------
 function bind(){
-  app.onclick=e=>{
-    const t=e.target.closest("[data-page],[data-habit],[data-goal]");
+  app.onclick = e=>{
+    const t=e.target.closest("[data-page],[data-habit]");
     if(!t) return;
 
     if(t.dataset.page){
       state.page=t.dataset.page;
-      save(); render();
-    }
-
-    if(t.dataset.goal){
-      state.goal=t.dataset.goal;
       save(); render();
     }
 
@@ -299,7 +340,12 @@ function bind(){
 // ---------- INIT ----------
 function render(){
   app.innerHTML = `
-  <div style="min-height:100vh;background:#020617;color:white">
+  <div style="
+    min-height:100vh;
+    background:radial-gradient(circle at top,#0f172a,#020617);
+    color:white;
+    font-family:system-ui
+  ">
     ${header()}
     ${screen()}
     ${nav()}
