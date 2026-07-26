@@ -114,7 +114,8 @@ function toDateStr(d){
 }
 function addDays(dateStr, n){ const d = new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return d; }
 function fmtDate(d){ return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }); }
-function clampDate(d){ if(d<state.startDate) return state.startDate; if(d>today) return today; return d; }
+const previewMax = toDateStr(addDays(today, 60));
+function clampDate(d){ if(d<state.startDate) return state.startDate; if(d>previewMax) return previewMax; return d; }
 function dayNumberForDate(dateStr){
   const start = new Date(state.startDate+'T00:00:00');
   const d = new Date(dateStr+'T00:00:00');
@@ -507,11 +508,11 @@ function periodTabs(section){
 }
 function dateNav(section){
   const d = viewState.date[section];
-  const atToday = d===today, atStart = d===state.startDate;
+  const atToday = d===today, atStart = d===state.startDate, atMax = d===previewMax;
   return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;background:#1e293b;padding:6px 8px;border-radius:10px">
     <button data-datenav="${section}:-1" ${atStart?'disabled':''} style="width:32px;height:36px;flex-shrink:0;background:none;border:none;color:${atStart?'#334155':'#22c55e'};font-size:18px;display:flex;align-items:center;justify-content:center">‹</button>
-    <input type="date" data-dateinput="${section}" value="${d}" min="${state.startDate}" max="${today}" style="flex:1;height:36px;background:#0f172a;border:1px solid #334155;color:#fff;padding:0 8px;border-radius:6px;font-size:12.5px">
-    <button data-datenav="${section}:1" ${atToday?'disabled':''} style="width:32px;height:36px;flex-shrink:0;background:none;border:none;color:${atToday?'#334155':'#22c55e'};font-size:18px;display:flex;align-items:center;justify-content:center">›</button>
+    <input type="date" data-dateinput="${section}" value="${d}" min="${state.startDate}" max="${previewMax}" style="flex:1;height:36px;background:#0f172a;border:1px solid #334155;color:#fff;padding:0 8px;border-radius:6px;font-size:12.5px">
+    <button data-datenav="${section}:1" ${atMax?'disabled':''} style="width:32px;height:36px;flex-shrink:0;background:none;border:none;color:${atMax?'#334155':'#22c55e'};font-size:18px;display:flex;align-items:center;justify-content:center">›</button>
     ${!atToday?`<button data-datenav="${section}:today" style="height:36px;flex-shrink:0;background:#334155;color:#fff;border:none;padding:0 10px;border-radius:6px;font-size:11px;white-space:nowrap">Today</button>`:''}
   </div>`;
 }
@@ -575,7 +576,7 @@ function dashboard(){
       <div style="background:#1e293b;border-radius:14px;padding:16px;margin-bottom:12px;text-align:center">
         <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px">${isToday?"Today's score":'Score on '+fmtDate(new Date(d+'T00:00:00'))}</div>
         <div style="font-size:32px;color:#22c55e;font-weight:700;margin-top:4px">${score===null?'—':score}</div>
-        ${score===null?'<div style="font-size:11px;color:#64748b;margin-top:2px">No data recorded for this day</div>':''}
+        ${score===null?`<div style="font-size:11px;color:#64748b;margin-top:2px">${d>today?"This day hasn't happened yet":'No data recorded for this day'}</div>`:''}
       </div>
       ${miniBar('Fitness',fDone,fTotal,'🏋️')}
       ${miniBar('Meals',mDone,6,'🍽')}
