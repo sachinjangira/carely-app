@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Carely</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111111">
+  <link rel="icon" href="icon.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *{ box-sizing:border-box; }
+    input, select, button{ font-family:inherit; }
+    input[type=text], input[type=number], input[type=date], select{
+      height:44px;
+      line-height:44px;
+      vertical-align:middle;
+    }
+    select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+      background-repeat:no-repeat;
+      background-position:right 12px center;
+      padding-right:32px !important;
+    }
+    input::placeholder{ color:#64748b; }
+  </style>
+</head>
+
+<body class="bg-black text-white">
+  <div id="app"></div>
+
+  <!-- Your app code -->
+  <script src="main.js?v=20"></script>
+
+  <!-- ✅ ADD THIS EXACTLY HERE -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js")
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.log("SW Error:", err));
+    }
+  </script>
+
+</body>
+</html>
